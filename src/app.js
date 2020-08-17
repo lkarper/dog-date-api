@@ -5,6 +5,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const { NODE_ENV } = require('./config');
 const authRouter = require('./auth/auth-router');
+const dogProfilesRouter = require('./dog-profiles/dog-profiles-router');
 
 const app = express();
 
@@ -18,6 +19,7 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api/auth', authRouter);
+app.use('/api/dog-profiles', dogProfilesRouter);
 
 app.use(function errorHandler(error, req, res, next) {
     let response;
