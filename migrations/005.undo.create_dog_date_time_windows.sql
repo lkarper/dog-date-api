@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS dog_date_time_windows;
