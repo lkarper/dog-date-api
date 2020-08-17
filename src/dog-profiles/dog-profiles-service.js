@@ -16,6 +16,24 @@ const DogProfilesService = {
             .where({ owner_id })
             .orderBy('name');
     },
+    insertProfile(db, newProfile) {
+        return db
+            .insert(newProfile)
+            .into('dog_date_dog_profiles')
+            .returning('*')
+            .then(([profile]) => profile)
+            .then(profile => this.getById(db, profile.id));
+    },
+    updateProfile(db, id, newProfileFields) {
+        return db('dog_date_dog_profiles')
+            .where({ id })
+            .update(newProfileFields);
+    },
+    deleteProfile(db, id) {
+        return db('dog_date_dog_profiles')
+            .where({ id })
+            .delete();
+    },
     serializeProfile(profile) {
         const {
             id,
