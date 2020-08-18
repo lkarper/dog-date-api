@@ -81,7 +81,7 @@ describe('Dog profiles endpoints', () => {
         });
     });
 
-    describe.only(`POST /api/dog-profiles`, () => {
+    describe(`POST /api/dog-profiles`, () => {
         beforeEach(() => 
             helpers.seedUsers(db, testUsers)
         );
