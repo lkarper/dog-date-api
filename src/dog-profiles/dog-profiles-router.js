@@ -9,10 +9,11 @@ const jsonBodyParser = express.json();
 dogProfilesRouter
     .route('/:dog_id')
     .all(checkDogProfileExists)
+    .all(requireAuth)
     .get((req, res, next) => {
         res.json(DogProfilesService.serializeProfile(res.profile))
     })
-    .delete(requireAuth, (req, res, next) => { 
+    .delete((req, res, next) => { 
         if (res.profile.owner_id !== req.user.id) {
             return res.status(401).json({ error: `Unauthorized request` });
         }
@@ -26,7 +27,7 @@ dogProfilesRouter
             })
             .catch(next);
     })
-    .patch(requireAuth, jsonBodyParser, (req, res, next) => {
+    .patch(jsonBodyParser, (req, res, next) => {
         if (res.profile.owner_id !== req.user.id) {
             return res.status(401).json({ error: `Unauthorized request` });
         }
@@ -102,7 +103,7 @@ dogProfilesRouter
     })
 
 dogProfilesRouter
-    .route('/')
+    .route('/user-dogs')
     .all(requireAuth)
     .get((req, res, next) => {
         const user_id = req.user.id;
@@ -115,7 +116,17 @@ dogProfilesRouter
             })
             .catch(next);
     })
-    .post(jsonBodyParser, (req, res, next) => {
+
+dogProfilesRouter
+    .route('/')
+    .get((req, res, next) => {
+        DogProfilesService.getAllProfiles(req.app.get('db'))
+            .then(profiles => {
+                res.json(profiles.map(DogProfilesService.serializeProfile));
+            })
+            .catch(next);
+    })
+    .post(requireAuth, jsonBodyParser, (req, res, next) => {
         const {
             name, 
             profile_img_url,
