@@ -31,6 +31,13 @@ const makeUsersArray = () => {
             phone: '123-654-7899',
             email: 'sample4@fakeemail.com',
         },
+        {
+            id: 5,
+            username: 'test-user-5',
+            password: 'password',
+            phone: '',
+            email: 'sample5@fakeemail.com'
+        },
     ];
 }
 
