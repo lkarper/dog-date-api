@@ -7,6 +7,21 @@ const dogProfilesRouter = express.Router();
 const jsonBodyParser = express.json();
 
 dogProfilesRouter
+    .route('/user-dogs')
+    .all(requireAuth)
+    .get((req, res, next) => {
+        const user_id = req.user.id;
+        DogProfilesService.getByOwnerId(
+            req.app.get('db'),
+            user_id
+        )
+            .then(profiles => {
+                res.json(profiles.map(DogProfilesService.serializeProfile));
+            })
+            .catch(next);
+    });
+
+dogProfilesRouter
     .route('/:dog_id')
     .all(checkDogProfileExists)
     .all(requireAuth)
@@ -14,7 +29,7 @@ dogProfilesRouter
         res.json(DogProfilesService.serializeProfile(res.profile))
     })
     .delete((req, res, next) => { 
-        if (res.profile.owner_id !== req.user.id) {
+        if (res.profile.owner.id !== req.user.id) {
             return res.status(401).json({ error: `Unauthorized request` });
         }
         
@@ -28,7 +43,7 @@ dogProfilesRouter
             .catch(next);
     })
     .patch(jsonBodyParser, (req, res, next) => {
-        if (res.profile.owner_id !== req.user.id) {
+        if (res.profile.owner.id !== req.user.id) {
             return res.status(401).json({ error: `Unauthorized request` });
         }
 
@@ -98,21 +113,6 @@ dogProfilesRouter
         )
             .then(numRowsAffected => {
                 res.status(204).end();
-            })
-            .catch(next);
-    })
-
-dogProfilesRouter
-    .route('/user-dogs')
-    .all(requireAuth)
-    .get((req, res, next) => {
-        const user_id = req.user.id;
-        DogProfilesService.getByOwnerId(
-            req.app.get('db'),
-            user_id
-        )
-            .then(profiles => {
-                res.json(profiles.map(DogProfilesService.serializeProfile));
             })
             .catch(next);
     })
@@ -208,7 +208,9 @@ async function checkDogProfileExists(req, res, next) {
         );
 
         if (!profile) {
-            return res.status(404).json({ error: `Dog profile doesn't exist` });
+            return res.status(404).json({ 
+                error: { message: `Dog profile doesn't exist` }
+            });
         }
 
         res.profile = profile;
