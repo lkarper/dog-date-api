@@ -4,8 +4,6 @@ const cloudinary = require('cloudinary').v2;
 const DogProfilesService = require('./dog-profiles-service');
 const { requireAuth } = require('../middleware/jwt-auth');
 const { CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET } = require('../config');
-const { profile } = require('console');
-const { resolve } = require('path');
 
 const dogProfilesRouter = express.Router();
 const jsonBodyParser = express.json();
