@@ -80,6 +80,71 @@ const HowlsService = {
             )
             .leftJoin('dog_date_users AS usr', 'ddh.user_id', 'usr.id');
     },
+    getById(db, id) {
+        return this.getAllHowls(db)
+            .where('ddh.id', id)
+            .first();
+    },
+    insertHowl(db, newHowl) {
+        const {
+            howl_title,
+            address,
+            city,
+            state,
+            zipcode,
+            lat,
+            lon,
+            date,
+            meeting_type,
+            personal_message,
+            dog_ids,
+            time_windows,
+            user_id
+        } = newHowl;
+
+        const baseHowl = {
+            howl_title,
+            address,
+            city,
+            state,
+            zipcode,
+            lat,
+            lon,
+            date,
+            meeting_type,
+            personal_message,
+            user_id
+        };
+
+        let howlId;
+
+        return db.transaction(function(trx) {
+            return trx
+                .insert(baseHowl, 'id')
+                .into('dog_date_howls')
+                .then(ids => {
+                    howlId = ids[0];
+                    const dogs = dog_ids.map((dog_id) => {
+                            return {
+                                howl_id: ids[0],
+                                dog_id,
+                            };
+                    });
+                    return trx('dog_date_dogs_in_howls').insert(dogs);
+                })
+                .then(() => {
+                    const windows = time_windows.map(window => {
+                        return {
+                            howl_id: howlId,
+                            ...window,
+                        };
+                    });
+                    return trx('dog_date_time_windows').insert(windows);
+                });
+        })
+        .then(inserts => this.getById(db, howlId))
+        .catch(error => console.error(error))
+    },
 
 };
 
