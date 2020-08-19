@@ -31,6 +31,40 @@ dogProfilesRouter
             .catch(next);
     });
 
+// dogProfilesRouter
+//     .route('/:dog_id/profile-photo')
+//     .all(checkDogProfileExists)
+//     .all(requireAuth)
+//     .post((req, res, next) => { //should be patch?
+//         if (res.profile.owner.id !== req.user.id) {
+//             return res.status(401).json({ error: `Unauthorized request` });
+//         }
+
+//         const { profile_img } = req.body;
+
+//         if (!profile_img) {
+//             return res.status(400).json({
+//                 error: {
+//                     message: `Request body must contain 'profile_img'.`,
+//                 },
+//             });
+//         }
+
+//         getProfilePhotoUrl(profile_img)
+//             .then(profile_img_url => {
+//                 const profileToUpdate = { profile_img_url };
+//                 return DogProfilesService.updateProfile(
+//                     req.app.get('db'),
+//                     req.params.dog_id,
+//                     profileToUpdate
+//                 );
+//             })
+//             .then(numRowsAffected => {
+//                 res.status(204).end();
+//             })
+//             .catch(next);
+//     })
+
 dogProfilesRouter
     .route('/:dog_id')
     .all(checkDogProfileExists)
