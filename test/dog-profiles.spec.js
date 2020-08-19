@@ -160,11 +160,11 @@ describe('Dog profiles endpoints', () => {
                         });
                 });
             });
-            
-    
-            it(`creates a dog profile, responding with 201 and the new profile`, () => {
-                
-                return supertest(app)
+
+            context(`Given that a profile photo is included in the profile`, () => {
+                it(`creates a dog profile, responds with 201 and the new profile`, () => {
+                    newProfile.profile_img = helpers.makeProfileImgString();
+                    return supertest(app)
                     .post('/api/dog-profiles')
                     .set('Authorization', helpers.makeAuthHeader(testUser))
                     .send(newProfile)
@@ -172,7 +172,7 @@ describe('Dog profiles endpoints', () => {
                     .expect(res => {
                         expect(res.headers.location).to.eql(`/api/dog-profiles/${res.body.id}`)
                         expect(res.body).to.have.property('id');
-                        expect(res.body.profile_img_url).to.eql('');
+                        expect(res.body.profile_img_url).to.not.eql('');
                         expect(res.body.name).to.eql(newProfile.name);
                         expect(res.body.age_years).to.eql(newProfile.age_years);
                         expect(res.body.age_months).to.eql(newProfile.age_months);
@@ -208,6 +208,7 @@ describe('Dog profiles endpoints', () => {
                             .expect(res => {
                                 expect(res.body).to.have.property('id');
                                 expect(res.body.name).to.eql(newProfile.name);
+                                expect(res.body.profile_img_url).to.not.eql('');
                                 expect(res.body.age_years).to.eql(newProfile.age_years);
                                 expect(res.body.age_months).to.eql(newProfile.age_months);
                                 expect(res.body.sex).to.eql(newProfile.sex);
@@ -235,10 +236,87 @@ describe('Dog profiles endpoints', () => {
                                     phone: testUser.phone,
                                 });
                             });
-                        }
-                    );
+                    });
+                });
             });
-    
+            
+            context(`Given that no profile photo is included`, () => {
+                it(`creates a dog profile, responding with 201 and the new profile`, () => {
+                    return supertest(app)
+                        .post('/api/dog-profiles')
+                        .set('Authorization', helpers.makeAuthHeader(testUser))
+                        .send(newProfile)
+                        .expect(201)
+                        .expect(res => {
+                            expect(res.headers.location).to.eql(`/api/dog-profiles/${res.body.id}`)
+                            expect(res.body).to.have.property('id');
+                            expect(res.body.profile_img_url).to.eql('');
+                            expect(res.body.name).to.eql(newProfile.name);
+                            expect(res.body.age_years).to.eql(newProfile.age_years);
+                            expect(res.body.age_months).to.eql(newProfile.age_months);
+                            expect(res.body.sex).to.eql(newProfile.sex);
+                            expect(res.body.breed).to.eql(newProfile.breed);
+                            expect(res.body.weight).to.eql(newProfile.weight);
+                            expect(res.body.energy).to.eql(newProfile.energy);
+                            expect(res.body.temperment).to.eql(newProfile.temperment);
+                            expect(res.body.obedience).to.eql(newProfile.obedience);
+                            expect(res.body.dislikes_puppies).to.eql(newProfile.dislikes_puppies);
+                            expect(res.body.dislikes_men).to.eql(newProfile.dislikes_men);
+                            expect(res.body.dislikes_women).to.eql(newProfile.dislikes_women);
+                            expect(res.body.dislikes_children).to.eql(newProfile.dislikes_children);
+                            expect(res.body.recently_adopted).to.eql(newProfile.recently_adopted);
+                            expect(res.body.prefers_people).to.eql(newProfile.prefers_people);
+                            expect(res.body.leash_aggression).to.eql(newProfile.leash_aggression);
+                            expect(res.body.elderly_dog).to.eql(newProfile.elderly_dog);
+                            expect(res.body.little_time_with_other_dogs).to.eql(newProfile.little_time_with_other_dogs);
+                            expect(res.body.much_experience_with_other_dogs).to.eql(newProfile.much_experience_with_other_dogs);
+                            expect(res.body.aggressive).to.eql(newProfile.aggressive);
+                            expect(res.body.owner_description).to.eql(newProfile.owner_description);
+                            expect(res.body.owner).to.eql({
+                                id: testUser.id,
+                                username: testUser.username,
+                                email: testUser.email,
+                                phone: testUser.phone,
+                            });
+                        })
+                        .then(postRes => {
+                            return supertest(app)
+                                .get(`/api/dog-profiles/${postRes.body.id}`)
+                                .set('Authorization', helpers.makeAuthHeader(testUser))
+                                .expect(res => {
+                                    expect(res.body).to.have.property('id');
+                                    expect(res.body.name).to.eql(newProfile.name);
+                                    expect(res.body.profile_img_url).to.eql('');
+                                    expect(res.body.age_years).to.eql(newProfile.age_years);
+                                    expect(res.body.age_months).to.eql(newProfile.age_months);
+                                    expect(res.body.sex).to.eql(newProfile.sex);
+                                    expect(res.body.breed).to.eql(newProfile.breed);
+                                    expect(res.body.weight).to.eql(newProfile.weight);
+                                    expect(res.body.energy).to.eql(newProfile.energy);
+                                    expect(res.body.temperment).to.eql(newProfile.temperment);
+                                    expect(res.body.obedience).to.eql(newProfile.obedience);
+                                    expect(res.body.dislikes_puppies).to.eql(newProfile.dislikes_puppies);
+                                    expect(res.body.dislikes_men).to.eql(newProfile.dislikes_men);
+                                    expect(res.body.dislikes_women).to.eql(newProfile.dislikes_women);
+                                    expect(res.body.dislikes_children).to.eql(newProfile.dislikes_children);
+                                    expect(res.body.recently_adopted).to.eql(newProfile.recently_adopted);
+                                    expect(res.body.prefers_people).to.eql(newProfile.prefers_people);
+                                    expect(res.body.leash_aggression).to.eql(newProfile.leash_aggression);
+                                    expect(res.body.elderly_dog).to.eql(newProfile.elderly_dog);
+                                    expect(res.body.little_time_with_other_dogs).to.eql(newProfile.little_time_with_other_dogs);
+                                    expect(res.body.much_experience_with_other_dogs).to.eql(newProfile.much_experience_with_other_dogs);
+                                    expect(res.body.aggressive).to.eql(newProfile.aggressive);
+                                    expect(res.body.owner_description).to.eql(newProfile.owner_description);
+                                    expect(res.body.owner).to.eql({
+                                        id: testUser.id,
+                                        username: testUser.username,
+                                        email: testUser.email,
+                                        phone: testUser.phone,
+                                    });
+                                });
+                        });
+                });
+            });
         });
     });
 
