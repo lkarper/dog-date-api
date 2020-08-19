@@ -1,10 +1,20 @@
 const express = require('express');
 const path = require('path');
+const cloudinary = require('cloudinary').v2;
 const DogProfilesService = require('./dog-profiles-service');
 const { requireAuth } = require('../middleware/jwt-auth');
+const { CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET } = require('../config');
+const { profile } = require('console');
+const { resolve } = require('path');
 
 const dogProfilesRouter = express.Router();
 const jsonBodyParser = express.json();
+
+cloudinary.config({
+    cloud_name: CLOUD_NAME,
+    api_key: CLOUDINARY_API_KEY,
+    api_secret: CLOUDINARY_API_SECRET, 
+});
 
 dogProfilesRouter
     .route('/user-dogs')
@@ -126,10 +136,11 @@ dogProfilesRouter
             })
             .catch(next);
     })
-    .post(requireAuth, jsonBodyParser, (req, res, next) => {
+    .post(requireAuth, jsonBodyParser, (req, res, next) => {    
+        
         const {
             name, 
-            profile_img_url,
+            profile_img,
             age_years,
             age_months,
             sex, 
@@ -153,8 +164,7 @@ dogProfilesRouter
         } = req.body;
 
         const newProfile = {
-            name, 
-            profile_img_url,
+            name,
             age_years,
             age_months,
             sex, 
@@ -186,11 +196,14 @@ dogProfilesRouter
         }
 
         newProfile.owner_id = req.user.id;
-
-        DogProfilesService.insertProfile(
-            req.app.get('db'),
-            newProfile
-        )
+        getProfilePhotoUrl(profile_img)
+            .then(profile_img_url => {
+                newProfile.profile_img_url = profile_img_url;
+                return DogProfilesService.insertProfile(
+                    req.app.get('db'),
+                    newProfile
+                );
+            })
             .then(profile => {
                 res
                     .status(201)
@@ -198,6 +211,38 @@ dogProfilesRouter
                     .json(DogProfilesService.serializeProfile(profile));
             })
             .catch(next);
+
+        // if (profile_img) {
+        //     cloudinary.uploader.upload(profile_img, (error, result) => {
+        //         newProfile.profile_img_url = result.secure_url;
+
+        //         DogProfilesService.insertProfile(
+        //             req.app.get('db'),
+        //             newProfile
+        //         )
+        //             .then(profile => {
+        //                 res
+        //                     .status(201)
+        //                     .location(path.posix.join(req.originalUrl, `/${profile.id}`))
+        //                     .json(DogProfilesService.serializeProfile(profile));
+        //             })
+        //             .catch(next);
+        //     });
+        // } else {
+        //         newProfile.profile_img_url = '';
+
+        //         DogProfilesService.insertProfile(
+        //             req.app.get('db'),
+        //             newProfile
+        //         )
+        //             .then(profile => {
+        //                 res
+        //                     .status(201)
+        //                     .location(path.posix.join(req.originalUrl, `/${profile.id}`))
+        //                     .json(DogProfilesService.serializeProfile(profile));
+        //             })
+        //             .catch(next);
+        // }
     });
 
 async function checkDogProfileExists(req, res, next) {
@@ -218,6 +263,22 @@ async function checkDogProfileExists(req, res, next) {
     } catch(error) {
         next(error);
     }
+}
+
+function getProfilePhotoUrl(profile_img) {
+    return new Promise((resolve, reject) => {
+        if (!profile_img) {
+            resolve('');
+        } else { 
+            cloudinary.uploader.upload(profile_img, (error, result) => {
+                if (error) {
+                    reject(error);
+                } else {
+                    resolve(result.secure_url);
+                }
+            });
+        }
+    });
 }
 
 module.exports = dogProfilesRouter;
