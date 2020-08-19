@@ -81,6 +81,7 @@ describe('Dog profiles endpoints', () => {
         });
     });
 
+    // Update POST and PATCH tests to test Cloudinary
     describe(`POST /api/dog-profiles`, () => {
         beforeEach(() => 
             helpers.seedUsers(db, testUsers)
@@ -90,7 +91,6 @@ describe('Dog profiles endpoints', () => {
             const testUser = testUsers[0];
             const newProfile = {
                 name: 'Test dog',
-                profile_img_url: 'http://placehold.it/500x500',
                 age_years: 1,
                 age_months: 1,
                 sex: 'test sex 1',
@@ -120,8 +120,8 @@ describe('Dog profiles endpoints', () => {
                 .expect(res => {
                     expect(res.headers.location).to.eql(`/api/dog-profiles/${res.body.id}`)
                     expect(res.body).to.have.property('id');
+                    expect(res.body.profile_img_url).to.eql('');
                     expect(res.body.name).to.eql(newProfile.name);
-                    expect(res.body.profile_img_url).to.eql(newProfile.profile_img_url);
                     expect(res.body.age_years).to.eql(newProfile.age_years);
                     expect(res.body.age_months).to.eql(newProfile.age_months);
                     expect(res.body.sex).to.eql(newProfile.sex);
@@ -156,7 +156,6 @@ describe('Dog profiles endpoints', () => {
                         .expect(res => {
                             expect(res.body).to.have.property('id');
                             expect(res.body.name).to.eql(newProfile.name);
-                            expect(res.body.profile_img_url).to.eql(newProfile.profile_img_url);
                             expect(res.body.age_years).to.eql(newProfile.age_years);
                             expect(res.body.age_months).to.eql(newProfile.age_months);
                             expect(res.body.sex).to.eql(newProfile.sex);
@@ -462,7 +461,7 @@ describe('Dog profiles endpoints', () => {
                         .set('Authorization', authHeader)
                         .send({ })
                         .expect(400, { error: 
-                            { message: `Request body must contain one of 'name', 'profile_img_url', 'age_years', 'age_months', 'sex', 'breed', 'weight', 'energy', 'temperment', 'obedience', 'dislikes_puppies', 'dislikes_men', 'dislikes_women', 'dislikes_children', 'recently_adopted', 'prefers_people', 'leash_aggression', 'elderly_dog', 'little_time_with_other_dogs', 'much_experience_with_other_dogs', 'aggressive', 'owner_description'.` } 
+                            { message: `Request body must contain one of 'name', 'profile_img', 'age_years', 'age_months', 'sex', 'breed', 'weight', 'energy', 'temperment', 'obedience', 'dislikes_puppies', 'dislikes_men', 'dislikes_women', 'dislikes_children', 'recently_adopted', 'prefers_people', 'leash_aggression', 'elderly_dog', 'little_time_with_other_dogs', 'much_experience_with_other_dogs', 'aggressive', 'owner_description'.` } 
                         });
                 });
             });
