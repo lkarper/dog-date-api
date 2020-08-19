@@ -6,7 +6,7 @@ const REGEX_UPPER_LOWER_NUMBER_SPECIAL = /(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*
 const UsersService = {
     validatePassword(password) {
         if (password.length < 8) {
-            return `Password must be longer than 8 characters`;
+            return `Password must be at least 8 characters`;
         }
         if (password.length > 72) {
             return `Password must be less than 72 characters`;
@@ -24,6 +24,12 @@ const UsersService = {
             .where({ username })
             .first()
             .then(user => !!user);
+    },
+    hasUserWithEmail(db, email) {
+        return db('dog_date_users')
+            .where({ email })
+            .first()
+            .then(email => !!email);
     },
     insertUser(db, newUser) {
         return db
