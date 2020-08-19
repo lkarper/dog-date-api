@@ -59,7 +59,7 @@ dogProfilesRouter
 
         const {
             name, 
-            profile_img_url,
+            profile_img,
             age_years,
             age_months,
             sex, 
@@ -84,7 +84,6 @@ dogProfilesRouter
 
         const profileToUpdate = {
             name, 
-            profile_img_url,
             age_years,
             age_months,
             sex, 
@@ -111,21 +110,31 @@ dogProfilesRouter
         if (numberOfValues === 0) {
             return res.status(400).json({
                 error: {
-                    message: `Request body must contain one of 'name', 'profile_img_url', 'age_years', 'age_months', 'sex', 'breed', 'weight', 'energy', 'temperment', 'obedience', 'dislikes_puppies', 'dislikes_men', 'dislikes_women', 'dislikes_children', 'recently_adopted', 'prefers_people', 'leash_aggression', 'elderly_dog', 'little_time_with_other_dogs', 'much_experience_with_other_dogs', 'aggressive', 'owner_description'.`,
+                    message: `Request body must contain one of 'name', 'profile_img', 'age_years', 'age_months', 'sex', 'breed', 'weight', 'energy', 'temperment', 'obedience', 'dislikes_puppies', 'dislikes_men', 'dislikes_women', 'dislikes_children', 'recently_adopted', 'prefers_people', 'leash_aggression', 'elderly_dog', 'little_time_with_other_dogs', 'much_experience_with_other_dogs', 'aggressive', 'owner_description'.`,
                 }
             });
         }
 
-        DogProfilesService.updateProfile(
-            req.app.get('db'),
-            req.params.dog_id,
-            profileToUpdate
-        )
+        getProfilePhotoUrl(profile_img)
+            .then(profile_img_url => {
+                let newProfileUrl;
+                if (!profile_img_url && req.body.profile_img_url) {
+                    newProfileUrl = req.body.profile_img_url;
+                } else {
+                    newProfileUrl = profile_img_url;
+                }
+                profileToUpdate.profile_img_url = newProfileUrl;
+                return DogProfilesService.updateProfile(
+                    req.app.get('db'),
+                    req.params.dog_id,
+                    profileToUpdate
+                );
+            })
             .then(numRowsAffected => {
                 res.status(204).end();
             })
             .catch(next);
-    })
+    });
 
 dogProfilesRouter
     .route('/')
