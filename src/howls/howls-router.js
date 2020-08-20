@@ -11,9 +11,20 @@ howlsRouter
     .get((req, res, next) => {
         HowlsService.getAllHowls(req.app.get('db'))
             .then(howls => {
-                res.json(howls);
+                HowlsService.getReviews(req.app.get('db'))
+                    .then(reviews => {
+                        const params = req.query;
+                        HowlsService.filterHowls(
+                            reviews,
+                            howls, 
+                            params
+                        )
+                        .then(howls => {
+                            res.status(200).json(howls);
+                        })
+                    });
             })
-            .catch(next);
+            .catch(next);   
     })
     .post(requireAuth, jsonBodyParser, (req, res, next) => {
 
@@ -69,5 +80,33 @@ howlsRouter
         })
         .catch(next);
     });
+
+howlsRouter
+    .route('/:howl_id')
+    .all(requireAuth)
+    .all(checkHowlExists)
+    .get((req, res, next) => {
+        res.json(res.howl);
+    });
+
+async function checkHowlExists(req, res, next) {
+    try {
+        const howl = await HowlsService.getById(
+            req.app.get('db'),
+            req.params.howl_id
+        );
+
+        if (!howl) {
+            return res.status(404).json({
+                error: { message: `Howl doesn't exist` },
+            });
+        }
+
+        res.howl = howl;
+        next();
+    } catch(error) {
+        next(error);
+    }
+}
 
 module.exports = howlsRouter;
