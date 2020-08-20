@@ -20,7 +20,7 @@ howlsRouter
                             params
                         )
                         .then(howls => {
-                            res.status(200).json(howls);
+                            res.status(200).json(howls.map(HowlsService.serializeHowl));
                         })
                     });
             })
@@ -76,7 +76,7 @@ howlsRouter
             res.
                 status(201)
                 .location(path.posix.join(req.originalUrl, `/${howl.id}`))
-                .json(howl);
+                .json(HowlsService.serializeHowl(howl));
         })
         .catch(next);
     });
@@ -86,7 +86,75 @@ howlsRouter
     .all(requireAuth)
     .all(checkHowlExists)
     .get((req, res, next) => {
-        res.json(res.howl);
+        res.json(HowlsService.serializeHowl(res.howl));
+    })
+    .delete((req, res, next) => {
+        if (res.howl.user_id !== req.user.id) {
+            return res.status(401).json({ error: `Unauthorizaed request` });
+        }
+
+        HowlsService.deleteHowl(
+            req.app.get('db'),
+            req.params.howl_id
+        )
+            .then(() => {
+                res.status(204).end();
+            })
+            .catch(next);
+    })
+    .patch(jsonBodyParser, (req, res, next) => {
+        if (res.howl.user_id !== req.user.id) {
+            return res.status(401).json({ error: `Unauthorizaed request` });
+        }
+
+        const {
+            howl_title,
+            address,
+            city,
+            state,
+            zipcode,
+            lat,
+            lon,
+            date,
+            meeting_type,
+            personal_message,
+            dog_ids,
+            time_windows
+        } = req.body;
+
+        const howlToUpdate = {
+            howl_title,
+            address,
+            city,
+            state,
+            zipcode,
+            lat,
+            lon,
+            date,
+            meeting_type,
+            personal_message,
+            dog_ids,
+            time_windows
+        };
+
+        const numberOfValues = Object.values(howlToUpdate).filter(Boolean).length;
+        if (numberOfValues === 0) {
+            return res.status(400).json({
+                error: {
+                    message: `Request body must contain one of 'howl_title', 'address', 'city', 'state', 'zipcode', 'lat', 'lon', 'date', 'meeting_type', 'personal_message', 'dog_ids', 'time_windows'.`,
+                },
+            });
+        }
+
+        HowlsService.updateHowl(
+            req.app.get('db'),
+            req.params.howl_id,
+            howlToUpdate
+        )
+        .then(numRowsAffected => {
+            res.status(204).end();
+        })
+        .catch(next);
     });
 
 async function checkHowlExists(req, res, next) {
