@@ -158,8 +158,8 @@ const HowlsService = {
             const {
                 state,
                 zipcode,
-                ratingFilter,
-                typeOfMeeting,
+                rating_filter,
+                type_of_meeting,
                 days_of_week = '',
                 recurring_meeting_windows = '',
                 date,
@@ -203,7 +203,7 @@ const HowlsService = {
             if (zipcode) {
                 filteredHowls = filteredHowls.filter(howl => howl.location.zipcode === zipcode);
             }
-            if (ratingFilter) {
+            if (rating_filter) {
                 const arrayOfPassingDogIds = filteredHowls
                     .map(howl => howl.dogs.map(dog => dog.dog_id))
                     .flat()
@@ -211,28 +211,28 @@ const HowlsService = {
                         reviews.filter(review => review.dog_id === dog_id)
                     )
                     .filter(arrayOfReviews => 
-                        this.calculateAverageWithArrayOfReviews(arrayOfReviews) >= parseInt(ratingFilter)
+                        this.calculateAverageWithArrayOfReviews(arrayOfReviews) >= parseInt(rating_filter)
                     )
                     .map(arrayOfReviews => arrayOfReviews[0].dog_id);
                 filteredHowls = filteredHowls.filter(howl => {
                     let includeHowl = false;
                     arrayOfPassingDogIds.forEach(passing_id => {
-                        if (howl.dogs.find(dog => dog.dog_id === passing_id)) {  //here
+                        if (howl.dogs.find(dog => dog.dog_id === passing_id)) {
                             includeHowl = true;
                         }
                     });
                     return includeHowl;
                 });
             } 
-            if (typeOfMeeting) {
-                filteredHowls = filteredHowls.filter(howl => howl.meeting_type === typeOfMeeting);
+            if (type_of_meeting) {
+                filteredHowls = filteredHowls.filter(howl => howl.meeting_type === type_of_meeting);
             }
             if (daysOfWeek.length !==0) {
                 filteredHowls = filteredHowls.filter(howl => {
                     if (howl.meeting_type === 'recurring') {
                         let includeHowl = false;
                         howl.time_windows.forEach(window => {
-                            if (daysOfWeek.includes(window.dayOfWeek)) {
+                            if (daysOfWeek.includes(window.day_of_week)) {
                                 includeHowl = true;
                             }
                         });
@@ -255,9 +255,9 @@ const HowlsService = {
                                 recurringMeetingWindows.forEach(win => {
                                     const windowP = win[Object.keys(win)[0]];
                                     if (windowP.dayOfWeek === day) {
-                                        if ((window.endTime >= windowP.startTime && window.startTime <= windowP.startTime) || 
-                                            (window.startTime <= windowP.endTime && window.endTime >= windowP.endTime) ||
-                                            (window.startTime >= windowP.startTime && window.endTime <= windowP.endTime)) {
+                                        if ((window.end_time > windowP.startTime && window.start_time <= windowP.startTime) || 
+                                            (window.start_time < windowP.endTime && window.end_time >= windowP.endTime) ||
+                                            (window.start_time >= windowP.startTime && window.end_time <= windowP.endTime)) {
                                                 includeHowl = true;
                                         }
                                     }
@@ -268,20 +268,20 @@ const HowlsService = {
                     } else {
                         let includeHowl = false;
                         howl.time_windows.forEach(window => {
-                            if (daysOfWeek.includes(window.dayOfWeek)) {
+                            if (daysOfWeek.includes(window.day_of_week)) {
                                 let found = false;
                                 recurringMeetingWindows.forEach(win => {
-                                    if (win[Object.keys(win)[0]].dayOfWeek === window.dayOfWeek) {
+                                    if (win[Object.keys(win)[0]].dayOfWeek === window.day_of_week) {
                                         found = true;
                                     }
                                 });
                                 if (found) {
                                     recurringMeetingWindows.forEach(win => {
                                         const windowP = win[Object.keys(win)[0]];
-                                        if (windowP.dayOfWeek === window.dayOfWeek) {
-                                            if ((window.endTime >= windowP.startTime && window.startTime <= windowP.startTime) || 
-                                                (window.startTime <= windowP.endTime && window.endTime >= windowP.endTime) ||
-                                                (window.startTime >= windowP.startTime && window.endTime <= windowP.endTime)) {
+                                        if (windowP.dayOfWeek === window.day_of_week) {
+                                            if ((window.end_time > windowP.startTime && window.start_time <= windowP.startTime) || 
+                                                (window.start_time < windowP.endTime && window.end_time >= windowP.endTime) ||
+                                                (window.start_time >= windowP.startTime && window.end_time <= windowP.endTime)) {
                                                     includeHowl = true;
                                             }
                                         }
@@ -302,7 +302,7 @@ const HowlsService = {
                     } else {
                         let includeHowl = false;
                         howl.time_windows.forEach(window => {
-                            if (moment(date).format("dddd") === window.dayOfWeek) {
+                            if (moment(date).format("dddd") === window.day_of_week) {
                                 includeHowl = true;
                             }
                         });
@@ -315,11 +315,11 @@ const HowlsService = {
                     if (howl.meeting_type === 'once') {
                         let includeHowl = false;
                         if (howl.date === date) {
-                            howl.timeWindows.forEach(window => {
+                            howl.time_windows.forEach(window => {
                                 timeWindows.forEach(windowP => {
-                                    if ((window.endTime >= windowP.startTime && window.startTime <= windowP.startTime) || 
-                                        (window.startTime <= windowP.endTime && window.endTime >= windowP.endTime) ||
-                                        (window.startTime >= windowP.startTime && window.endTime <= windowP.endTime)) {
+                                    if ((window.end_time > windowP.startTime && window.start_time <= windowP.startTime) || 
+                                        (window.start_time < windowP.endTime && window.end_time >= windowP.endTime) ||
+                                        (window.start_time >= windowP.startTime && window.end_time <= windowP.endTime)) {
                                             includeHowl = true;
                                         }
                                 });    
@@ -329,11 +329,11 @@ const HowlsService = {
                     } else {
                         let includeHowl = false;
                         howl.time_windows.forEach(window => {
-                            if (moment(date).format("dddd") === window.dayOfWeek) {
+                            if (moment(date).format("dddd") === window.day_of_week) {
                                 timeWindows.forEach(windowP => {
-                                    if ((window.endTime >= windowP.startTime && window.startTime <= windowP.startTime) || 
-                                        (window.startTime <= windowP.endTime && window.endTime >= windowP.endTime) ||
-                                        (window.startTime >= windowP.startTime && window.endTime <= windowP.endTime)) {
+                                    if ((window.end_time > windowP.startTime && window.start_time <= windowP.startTime) || 
+                                        (window.start_time < windowP.endTime && window.end_time >= windowP.endTime) ||
+                                        (window.start_time >= windowP.startTime && window.end_time <= windowP.endTime)) {
                                             includeHowl = true;
                                         }
                                 });    
@@ -367,8 +367,6 @@ const HowlsService = {
             return acc + averageRating;
         }, 0) / reviews.length;
     }
-
-
 };
 
 module.exports = HowlsService;
