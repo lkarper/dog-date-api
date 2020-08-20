@@ -1,3 +1,4 @@
+const xss = require('xss');
 const moment = require('moment');
 
 const HowlsService = {
@@ -151,6 +152,89 @@ const HowlsService = {
         })
         .then(inserts => this.getById(db, howlId))
         .catch(error => console.error(error))
+    },
+    deleteHowl(db, id) {
+        return db('dog_date_howls')
+            .where({ id })
+            .delete();
+    },
+    updateHowl(db, id, newHowlFields) {
+        const {
+            howl_title,
+            address,
+            city,
+            state,
+            zipcode,
+            lat,
+            lon,
+            date,
+            meeting_type,
+            personal_message,
+            dog_ids,
+            time_windows,
+            user_id
+        } = newHowlFields;
+
+        const baseHowl = {
+            howl_title,
+            address,
+            city,
+            state,
+            zipcode,
+            lat,
+            lon,
+            date,
+            meeting_type,
+            personal_message,
+            user_id
+        };
+
+        return db.transaction(function(trx) {
+            return trx('dog_date_howls')
+                .where({ id })
+                .update(baseHowl)
+                .then(() => {
+                    if (dog_ids) {
+                        return trx('dog_date_dogs_in_howls')
+                            .where('howl_id', id)
+                            .delete();
+                    }
+                    return
+                })
+                .then(() => {
+                    if (dog_ids) {
+                        const dogs = dog_ids.map((dog_id) => {
+                            return {
+                                howl_id: id,
+                                dog_id,
+                            };
+                        });
+                        return trx('dog_date_dogs_in_howls').insert(dogs);
+                    }
+                    return
+                })
+                .then(() => {
+                    if (time_windows) {
+                        return trx('dog_date_time_windows')
+                            .where('howl_id', id)
+                            .delete();
+                    }
+                    return
+                })
+                .then(() => {
+                    if (time_windows) {
+                        const windows = time_windows.map(window => {
+                            return {
+                                howl_id: id,
+                                ...window,
+                            };
+                        });
+                        return trx('dog_date_time_windows').insert(windows);
+                    }
+                    return;
+                });
+        })
+        .catch(error => console.error(error));
     },
     filterHowls(reviews, howls, params) {
         return new Promise((res, rej) => {
@@ -366,6 +450,78 @@ const HowlsService = {
             ) / 6;
             return acc + averageRating;
         }, 0) / reviews.length;
+    },
+    serializeHowl(howl) {
+        const {
+            id,
+            user_id,
+            howl_title,
+            date,
+            meeting_type,
+            personal_message,
+            dogs,
+            location,
+            time_windows,
+        } = howl;
+
+        return {
+            id,
+            user_id,
+            howl_title: xss(howl_title),
+            date: xss(date),
+            meeting_type: xss(meeting_type),
+            personal_message: xss(personal_message),
+            dogs: dogs.map(dog => {
+                return {
+                    dog_id: dog.dog_id,
+                    profile: {
+                        name: xss(dog.profile.name), 
+                        profile_img_url: xss(dog.profile.profile_img_url),
+                        age_years: dog.profile.age_years,
+                        age_months: dog.profile.age_months,
+                        sex: xss(dog.profile.sex), 
+                        breed: xss(dog.profile.breed),
+                        weight: dog.profile.weight,
+                        energy: xss(dog.profile.energy),
+                        temperment: xss(dog.profile.temperment),
+                        obedience: xss(dog.profile.obedience),
+                        dislikes_puppies: dog.profile.dislikes_puppies,
+                        dislikes_men: dog.profile.dislikes_men,
+                        dislikes_women: dog.profile.dislikes_women,
+                        dislikes_children: dog.profile.dislikes_children,
+                        recently_adopted: dog.profile.recently_adopted,
+                        prefers_people: dog.profile.prefers_people,
+                        leash_aggression: dog.profile.leash_aggression,
+                        elderly_dog: dog.profile.elderly_dog,
+                        little_time_with_other_dogs: dog.profile.little_time_with_other_dogs,
+                        much_experience_with_other_dogs: dog.profile.much_experience_with_other_dogs,
+                        aggressive: dog.profile.aggressive,
+                        owner_description: xss(dog.profile.owner_description),
+                    },
+                    owner: {
+                        id: dog.owner.id,
+                        email: xss(dog.owner.email),
+                        username: xss(dog.owner.username),
+                        phone: xss(dog.owner.phone),
+                    }
+                };
+            }),
+            location: {
+                address: xss(location.address),
+                city: xss(location.city),
+                state: xss(location.state),
+                zipcode: xss(location.zipcode),
+                lat: xss(location.lat),
+                lon: xss(location.lon),
+            },
+            time_windows: time_windows.map(window => {
+                return {
+                    day_of_week: xss(window.day_of_week),
+                    start_time: xss(window.start_time),
+                    end_time: xss(window.end_time),
+                };
+            }),
+        };
     }
 };
 
