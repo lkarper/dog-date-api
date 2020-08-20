@@ -98,6 +98,30 @@ const ReviewsService = {
             .where({ id })
             .update(newReviewFields);
     },
+    getCommentsForReview(db, review_id) {
+        return db('dog_date_review_comments')
+            .where({ review_id })
+            .select('*')
+            .orderBy('date_time');
+    },
+    serializeComment(comment) {
+        const {
+            id,
+            review_id,
+            commenter,
+            date_time,
+            edited,
+        } = comment;
+
+        return {
+            id,
+            review_id,
+            commenter: xss(commenter),
+            date_time,
+            comment: xss(comment.comment),
+            edited
+        };
+    },
     serializeReview(review) {
         const {
             id,
