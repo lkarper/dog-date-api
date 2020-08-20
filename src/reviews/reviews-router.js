@@ -186,6 +186,21 @@ reviewsRouter
             .catch(next);
     });
 
+reviewsRouter
+    .route('/:review_id/comments')
+    .all(checkReviewExists)
+    .all(requireAuth)
+    .get((req, res, next) => {
+        ReviewsService.getCommentsForReview(
+            req.app.get('db'),
+            req.params.review_id
+        )
+            .then(comments => {
+                res.json(comments.map(ReviewsService.serializeComment));
+            })
+            .catch(next);
+    })
+
 
 async function checkReviewExists(req, res, next) {
     try {
