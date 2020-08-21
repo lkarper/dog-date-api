@@ -200,7 +200,118 @@ reviewsRouter
             })
             .catch(next);
     })
+    .post(jsonBodyParser, (req, res, next) => {
+        const {
+            date_time,
+            comment,
+            edited
+        } = req.body;
 
+        const newComment = {
+            date_time,
+            comment,
+            edited
+        };
+
+        for (const [key, value] of Object.entries(newComment)) {
+            if (value == null) {
+                return res.status(400).json({
+                    error: `Missing '${key}' in request body`,
+                });
+            }
+        }
+
+        newComment.review_id = req.params.review_id;
+        newComment.commenter = req.user.username;
+
+        ReviewsService.insertComment(
+            req.app.get('db'),
+            newComment
+        )
+            .then(comment => {
+                res.json(ReviewsService.serializeComment(comment));
+            })
+            .catch(next);
+    });
+
+reviewsRouter
+    .route('/:review_id/comments/:comment_id')
+    .all(checkCommentExists)
+    .all(requireAuth)
+    .get((req, res, next) => {
+        res.json(ReviewsService.serializeComment(res.comment));
+    })
+    .delete((req, res, next) => {
+        if (res.comment.commenter !== req.user.username) {
+            return res.status(401).json({ error: `Unauthorized request` });
+        }
+
+        ReviewsService.deleteComment(
+            req.app.get('db'),
+            req.params.comment_id
+        )
+            .then(() => {
+                res.status(204).end();
+            })
+            .catch(next);
+    })
+    .patch(jsonBodyParser, (req, res, next) => {
+        if (res.comment.commenter !== req.user.username) {
+            return res.status(401).json({ error: `Unauthorized request` });
+        }
+
+        const {
+            date_time,
+            comment,
+            edited
+        } = req.body;
+
+        const commentToUpdate = {
+            date_time,
+            comment,
+            edited
+        };
+
+        const numberOfValues = Object.values(commentToUpdate).filter(Boolean).length;
+        if (numberOfValues === 0) {
+            return res.status(400).json({
+                error: {
+                    message: `Request body must contain one of 'date_time', 'comment', 'edited'.`
+                },
+            });
+        }
+
+        ReviewsService.updateComment(
+            req.app.get('db'),
+            req.params.comment_id,
+            commentToUpdate
+        )
+            .then(numRowsAffected => {
+                res.status(204).end();
+            })
+            .catch(next);
+    });
+
+
+async function checkCommentExists(req, res, next) {
+    try {
+        const comment = await ReviewsService.getCommentById(
+            req.app.get('db'),
+            req.params.comment_id
+        );
+
+        if (!comment) {
+            return res.status(404).json({
+                error: { message: `Comment doesn't exist` }
+            });
+        }
+
+        res.comment = comment;
+        next();
+    } catch(error) {
+        next(error);
+    }
+}
 
 async function checkReviewExists(req, res, next) {
     try {
