@@ -236,6 +236,34 @@ const HowlsService = {
         })
         .catch(error => console.error(error));
     },
+    getUserSavedHowls(db, user_id) {
+        return db('dog_date_user_saved_howls')
+            .where({ user_id });
+    },
+    insertUserSavedHowl(db, newSavedHowl) {
+        return db('dog_date_user_saved_howls')
+            .insert(newSavedHowl)
+            .returning('*')
+            .then(([savedHowl]) => savedHowl);
+    },
+    getUserSavedHowlByUserIdAndHowlId(db, user_id, howl_id) {
+        return db('dog_date_user_saved_howls')
+            .where({
+                user_id,
+                howl_id
+            })
+            .first();
+    },
+    getUserSavedHowlById(db, id) {
+        return db('dog_date_user_saved_howls')
+            .where({ id })
+            .first();
+    },
+    deleteUserSavedHowl(db, id) {
+        return db('dog_date_user_saved_howls')
+            .where({ id })
+            .delete();
+    },
     filterHowls(reviews, howls, params) {
         return new Promise((res, rej) => {
             let filteredHowls = [...howls];
