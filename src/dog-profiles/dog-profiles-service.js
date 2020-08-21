@@ -69,6 +69,117 @@ const DogProfilesService = {
             .where({ id })
             .delete();
     },
+    getPackByUserId(db, user_id) {
+        return db
+            .from('dog_date_pack_members AS pm')
+            .where('pm.user_id', user_id)
+            .select(
+                'pm.id',
+                'pm.user_id',
+                db.raw(
+                    `json_build_object(
+                        'id', dp.id,
+                        'name', dp.name, 
+                        'profile_img_url', dp.profile_img_url,
+                        'age_years', dp.age_years,
+                        'age_months', dp.age_months,
+                        'sex', dp.sex,
+                        'breed', dp.breed,
+                        'weight', dp.weight,
+                        'energy', dp.energy,
+                        'temperment', dp.temperment,
+                        'obedience', dp.obedience,
+                        'dislikes_puppies', dp.dislikes_puppies,
+                        'dislikes_men', dp.dislikes_men,
+                        'dislikes_women', dp.dislikes_women, 
+                        'dislikes_children', dp.dislikes_children,
+                        'recently_adopted', dp.recently_adopted,
+                        'prefers_people', dp.prefers_people,
+                        'leash_aggression', dp.leash_aggression, 
+                        'elderly_dog', dp.elderly_dog,
+                        'little_time_with_other_dogs', dp.little_time_with_other_dogs,
+                        'much_experience_with_other_dogs', dp.much_experience_with_other_dogs,
+                        'aggressive', dp.aggressive,
+                        'owner_description', dp.owner_description, 
+                        'owner',
+                                json_build_object(
+                                    'id', usr.id,
+                                    'username', usr.username,
+                                    'email', usr.email,
+                                    'phone', usr.phone
+                                )
+                    ) AS "profile"`
+                ),
+            )
+            .leftJoin('dog_date_dog_profiles AS dp', 'dp.id', 'pm.pack_member_id')
+            .leftJoin('dog_date_users AS usr', 'dp.owner_id', 'usr.id');
+    },
+    getPackMemberByUserIdAndPackMemberId(db, user_id, pack_member_id) {
+        return this.getPackByUserId(db, user_id)
+            .where('pm.pack_member_id', pack_member_id)
+            .first();
+    },
+    getPackMemberById(db, id) {
+        return db
+            .from('dog_date_pack_members AS pm')
+            .where('pm.id', id)
+            .select(
+                'pm.id',
+                'pm.user_id',
+                db.raw(
+                    `json_build_object(
+                        'id', dp.id,
+                        'name', dp.name, 
+                        'profile_img_url', dp.profile_img_url,
+                        'age_years', dp.age_years,
+                        'age_months', dp.age_months,
+                        'sex', dp.sex,
+                        'breed', dp.breed,
+                        'weight', dp.weight,
+                        'energy', dp.energy,
+                        'temperment', dp.temperment,
+                        'obedience', dp.obedience,
+                        'dislikes_puppies', dp.dislikes_puppies,
+                        'dislikes_men', dp.dislikes_men,
+                        'dislikes_women', dp.dislikes_women, 
+                        'dislikes_children', dp.dislikes_children,
+                        'recently_adopted', dp.recently_adopted,
+                        'prefers_people', dp.prefers_people,
+                        'leash_aggression', dp.leash_aggression, 
+                        'elderly_dog', dp.elderly_dog,
+                        'little_time_with_other_dogs', dp.little_time_with_other_dogs,
+                        'much_experience_with_other_dogs', dp.much_experience_with_other_dogs,
+                        'aggressive', dp.aggressive,
+                        'owner_description', dp.owner_description, 
+                        'owner',
+                                json_build_object(
+                                    'id', usr.id,
+                                    'username', usr.username,
+                                    'email', usr.email,
+                                    'phone', usr.phone
+                                )
+                    ) AS "profile"`
+                ),
+            )
+            .leftJoin('dog_date_dog_profiles AS dp', 'dp.id', 'pm.pack_member_id')
+            .leftJoin('dog_date_users AS usr', 'dp.owner_id', 'usr.id')
+            .then(([profile]) => profile);
+    },
+    insertPackMember(db, newPackMember) {
+        return db
+            .insert(newPackMember)
+            .into('dog_date_pack_members')
+            .returning('*')
+            .then(([pack_member]) => pack_member)
+            .then(pack_member => 
+                this.getPackMemberByUserIdAndPackMemberId(db, pack_member.user_id, pack_member.pack_member_id)
+            );
+    },
+    removePackMember(db, id) {
+        return db('dog_date_pack_members')
+            .where({ id })
+            .delete();
+    },
     serializeProfile(profile) {
         const {
             id,
