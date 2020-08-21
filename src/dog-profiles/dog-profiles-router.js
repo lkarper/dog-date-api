@@ -40,14 +40,6 @@ dogProfilesRouter
         const user_id = req.user.id;
         const { pack_member_id } = req.body;
 
-        if (!pack_member_id) {
-            return res.status(400).json({
-                error: {
-                    message: `Request body must contain 'pack_member_id`,
-                },
-            });
-        }
-
         const newPackMember = {
             user_id,
             pack_member_id
@@ -60,7 +52,7 @@ dogProfilesRouter
             .then(pack_member => {
                 res
                     .status(201)
-                    .location(path.posix.join(req.originalUrl, `/${pack_member.pack_member_id}`))
+                    .location(path.posix.join(req.originalUrl, `/${pack_member.id}`))
                     .json({
                         id: pack_member.id,
                         user_id: pack_member.user_id,
@@ -371,6 +363,14 @@ dogProfilesRouter
 
 async function checkDogProfileExists(req, res, next) {
     try {
+
+        if (!req.params.dog_id && !req.body.pack_member_id) {
+            return res.status(400).json({
+                error: {
+                    message: `Request body must contain 'pack_member_id'`,
+                },
+            });
+        }
         const profile = await DogProfilesService.getById(
             req.app.get('db'),
             req.params.dog_id || req.body.pack_member_id
