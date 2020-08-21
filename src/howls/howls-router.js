@@ -305,7 +305,7 @@ async function checkSavedHowlExists(req, res, next) {
 
 async function checkHowlIsSaved(req, res, next) {
     try {
-        const savedHowl = await HowlsService.getUserSavedHowlByUserIdandHowlId(
+        const savedHowl = await HowlsService.getUserSavedHowlByUserIdAndHowlId(
             req.app.get('db'),
             req.user.id,
             req.body.howl_id
