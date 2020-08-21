@@ -829,7 +829,7 @@ describe('Dog profiles endpoints', () => {
         });
     });
 
-    describe.only(`DELETE /api/dog-profiles/pack-members/:entry_id`, () => {
+    describe(`DELETE /api/dog-profiles/pack-members/:entry_id`, () => {
 
         context('given no pack members', () => {
             beforeEach(() => {
