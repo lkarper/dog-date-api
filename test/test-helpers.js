@@ -150,10 +150,25 @@ const makeDogsArray = (users) => {
     ];
 }
 
+const makePackMembersArray = (testUsers, testDogs) => {
+    return testUsers.map((user, i) => {
+        return {
+            id: i + 1,
+            user_id: user.id,
+            pack_member_id: testDogs[i > 3 ? 0 : 3 - i].id
+        };
+    });
+}
+
 const makeDogsFixtures = () => {
     const testUsers = makeUsersArray();
     const testDogs = makeDogsArray(testUsers);
-    return { testUsers, testDogs };
+    const testPackMembers = makePackMembersArray(testUsers, testDogs);
+    return { 
+        testUsers, 
+        testDogs, 
+        testPackMembers 
+    };
 }
 
 const cleanTables = (db) => {
@@ -185,6 +200,13 @@ const seedDogProfileTables = (db, users, dogs) => {
     return db.transaction(async trx => {
         await seedUsers(trx, users);
         await trx.into('dog_date_dog_profiles').insert(dogs);
+    });
+}
+
+const seedPackMembers = (db, users, dogs, packMembers) => {
+    return db.transaction(async trx => {
+        await seedDogProfileTables(db, users, dogs);
+        await trx.into('dog_date_pack_members').insert(packMembers);
     });
 }
 
@@ -248,6 +270,14 @@ const makeExpectedProfile = (users, dog) => {
             username: owner.username,
             phone: owner.phone,
         },
+    };
+}
+
+const makeExpectedPackMember = (users, user, dog) => {
+    return {
+        id: user.id,
+        user_id: user.id,
+        profile: makeExpectedProfile(users, dog)
     };
 }
 
@@ -322,4 +352,7 @@ module.exports = {
     seedMaliciousProfile,
     makeAuthHeader,
     makeProfileImgString,
+    seedPackMembers,
+    makeExpectedPackMember,
+    makePackMembersArray
 };

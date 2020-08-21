@@ -3,11 +3,16 @@ const app = require('../src/app');
 const helpers = require('./test-helpers');
 const supertest = require('supertest');
 const { expect } = require('chai');
+const { makeExpectedProfile } = require('./test-helpers');
 
 describe('Dog profiles endpoints', () => {
     let db;
     
-    const { testUsers, testDogs } = helpers.makeDogsFixtures();
+    const { 
+        testUsers, 
+        testDogs, 
+        testPackMembers 
+    } = helpers.makeDogsFixtures();
 
     before('make knex instance', () => {
         db = knex({
@@ -81,7 +86,6 @@ describe('Dog profiles endpoints', () => {
         });
     });
 
-    // Update POST and PATCH tests to test Cloudinary
     describe(`POST /api/dog-profiles`, () => {
         beforeEach(() => 
             helpers.seedUsers(db, testUsers)
@@ -242,6 +246,7 @@ describe('Dog profiles endpoints', () => {
             
             context(`Given that no profile photo is included`, () => {
                 it(`creates a dog profile, responding with 201 and the new profile`, () => {
+                    newProfile.profile_img = '';
                     return supertest(app)
                         .post('/api/dog-profiles')
                         .set('Authorization', helpers.makeAuthHeader(testUser))
@@ -631,4 +636,263 @@ describe('Dog profiles endpoints', () => {
             });
         });
     });
+
+    describe(`GET /api/dog-profiles/pack-members`, () => {
+
+        context(`Given there is no authorization header`, () => {
+            beforeEach(() => 
+                helpers.seedDogProfileTables(db, testUsers, testDogs)
+            );
+            it(`responds with 401 and an error message`, () => {
+                return supertest(app)
+                    .get(`/api/dog-profiles/pack-members`)
+                    .expect(401, { error: `Missing bearer token` });
+            });
+        });
+
+        context(`Given there is an authorization header`, () => {
+            const authHeader = helpers.makeAuthHeader(testUsers[0]);
+            context(`Given no pack members`, () => {
+                beforeEach(() => 
+                    helpers.seedDogProfileTables(db, testUsers, testDogs)
+                );
+                it(`responds with 200 and an empty array`, () => {
+                    return supertest(app)
+                        .get(`/api/dog-profiles/pack-members`)
+                        .set('Authorization', authHeader)
+                        .expect(200, []);
+                });
+            });
+
+            context(`Given that there are pack members`, () => {
+                beforeEach(() => 
+                    helpers.seedPackMembers(db, testUsers, testDogs, testPackMembers)
+                );
+
+                it(`responds with 200 and the pack members`, () => {
+                    const expectedPackMember = helpers
+                        .makeExpectedPackMember(testUsers, testUsers[0], testDogs[3]);
+                    return supertest(app)
+                        .get('/api/dog-profiles/pack-members')
+                        .set('Authorization', authHeader)
+                        .expect(200, [expectedPackMember]);                
+                });
+            });
+        });
+    });
+
+    describe(`POST /api/dog-profiles/pack-members`, () => {
+
+        const testUser = testUsers[0];
+        const newPackMember = {
+            user_id: testUser.id,
+            pack_member_id: 1
+        };
+
+        context(`Given there is no authorization header`, () => {
+            beforeEach(() => 
+                helpers.seedDogProfileTables(db, testUsers, testDogs)
+            );
+            it(`responds with 401 and an error message`, () => {
+                return supertest(app)
+                    .post(`/api/dog-profiles/pack-members`)
+                    .send(newPackMember)
+                    .expect(401, { error: `Missing bearer token` });
+            });
+        });
+
+        context(`Given there is an authorization header`, () => {
+
+            context(`Given that the pack_member_id is missing from the body`, () => {
+                beforeEach(() => 
+                    helpers.seedDogProfileTables(db, testUsers, testDogs)
+                );
+                it(`responds with 400 and an error message`, () => {
+                    return supertest(app)
+                        .post('/api/dog-profiles/pack-members')
+                        .set('Authorization', helpers.makeAuthHeader(testUser))
+                        .send({})
+                        .expect(400, {
+                            error: {
+                                message: `Request body must contain 'pack_member_id'`,
+                            },
+                        });
+                });
+            });
+
+            context(`Given that the user has not yet added the dog to their pack and the body is properly formatted`, () => {
+                beforeEach(() => 
+                    helpers.seedDogProfileTables(db, testUsers, testDogs)
+                );
+                it(`creates a new pack-member and responds with 201 and the pack member profile`, () => {
+                    const expectedDogProfile = makeExpectedProfile(testUsers, testDogs[newPackMember.pack_member_id - 1]);
+                    return supertest(app)
+                        .post('/api/dog-profiles/pack-members')
+                        .set('Authorization', helpers.makeAuthHeader(testUser))
+                        .send(newPackMember)
+                        .expect(201)
+                        .expect(res => {
+                            expect(res.headers.location).to.eql(`/api/dog-profiles/pack-members/${res.body.id}`);
+                            expect(res.body).to.have.property('id');
+                            expect(res.body.user_id).to.eql(newPackMember.user_id)
+                            expect(res.body.profile).to.eql(expectedDogProfile);
+                        })
+                        .then(postRes => {
+                            return supertest(app)
+                                .get(`/api/dog-profiles/pack-members/${postRes.body.id}`)
+                                .set('Authorization', helpers.makeAuthHeader(testUser))
+                                .expect(res => {
+                                    expect(res.body).to.have.property('id');
+                                    expect(res.body.user_id).to.eql(newPackMember.user_id)
+                                    expect(res.body.profile).to.eql(expectedDogProfile);
+                                });
+                        });
+                });
+            });
+
+            context(`Given that the user has already added the dog to their pack`, () => {
+                beforeEach(() =>
+                    helpers.seedPackMembers(db, testUsers, testDogs, testPackMembers)
+                );
+                it(`responds with 304`, () => {
+                    return supertest(app)
+                        .post('/api/dog-profiles/pack-members')
+                        .set('Authorization', helpers.makeAuthHeader(testUser))
+                        .send({
+                            user_id: 1,
+                            pack_member_id: 4
+                        })
+                        .expect(304);
+                });
+            });
+
+            context(`Given that a dog profile doesn't exist and a user attempts to add it to their pack`, () => {
+                beforeEach(() =>
+                    helpers.seedPackMembers(db, testUsers, testDogs, testPackMembers)
+                );
+                it(`responds with 404 and an error message`, () => {
+                    return supertest(app)
+                    .post('/api/dog-profiles/pack-members')
+                    .set('Authorization', helpers.makeAuthHeader(testUser))
+                    .send({
+                        user_id: 1,
+                        pack_member_id: 44
+                    })
+                    .expect(404, { error: 
+                        { message: `Dog profile doesn't exist` }
+                    });
+                });
+            });
+        });
+    });
+
+    describe(`GET '/api/dog-profiles/pack-member/:entry_id`, () => {
+        context(`Given no pack members`, () => {
+            beforeEach(() => {
+                helpers.seedDogProfileTables(db, testUsers, testDogs)
+            });
+            it(`responds with 404`, () => {
+                const entryId = 123456;
+                return supertest(app)
+                    .get(`/api/dog-profiles/pack-members/${entryId}`)
+                    .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+                    .expect(404, { error: 
+                        { message: `Pack member doesn't exist` }
+                    });
+            });
+        });
+
+        context(`Given that there are pack members`, () => {
+            beforeEach(() => 
+                helpers.seedPackMembers(db, testUsers, testDogs, testPackMembers)
+            );
+
+            context(`Given that there is no authorization header`, () => {
+                it(`responds with 401 and an error message`, () => {
+                    return supertest(app)
+                        .get(`/api/dog-profiles/pack-members/1`)
+                        .expect(401, { error: `Missing bearer token` });
+                });
+            });
+
+            context(`Given that there is an authorization header`, () => {
+                it(`responds with 200 and the sepcified pack member`, () => {
+                    const entryId = 1;
+                    const expectedPackMember = helpers
+                        .makeExpectedPackMember(testUsers, testUsers[0], testDogs[3]);
+                    return supertest(app)
+                        .get(`/api/dog-profiles/pack-members/${entryId}`)
+                        .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+                        .expect(200, expectedPackMember);
+                });
+            });
+        });
+    });
+
+    describe.only(`DELETE /api/dog-profiles/pack-members/:entry_id`, () => {
+
+        context('given no pack members', () => {
+            beforeEach(() => {
+                helpers.seedDogProfileTables(db, testUsers, testDogs);
+            });
+            it('responds with 404', () => {
+                const packMemberId = 123456;
+                return supertest(app)
+                    .delete(`/api/dog-profiles/${packMemberId}`)
+                    .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+                    .expect(404, { 
+                        error: { message: `Dog profile doesn't exist` },
+                    });
+            });
+        });
+
+        context('given there are pack members in the database', () => {
+            beforeEach(`insert pack members`, () =>
+                helpers.seedPackMembers(
+                    db,
+                    testUsers, 
+                    testDogs,
+                    testPackMembers
+                ) 
+            );
+
+            context(`Given that there is no authorization header`, () => {
+                it(`responds with 401 and an error message`, () => {
+                    return supertest(app)
+                        .delete(`/api/dog-profiles/pack-members/1`)
+                        .expect(401, { error: `Missing bearer token` });
+                });
+            });
+            
+            context(`Given that there is an authorization header`, () => {
+                context(`given a user attempts to delete a pack member that does not belong to that user`, () => {
+                    it(`responds with 401 unauthorized request`, () => {
+                        const idToRemove = 3;
+                        
+                        return supertest(app)
+                            .delete(`/api/dog-profiles/pack-members/${idToRemove}`)
+                            .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+                            .expect(401, { error: `Unauthorized request` });
+                    });
+                });
+    
+                context(`given a user attempts to delete a pack member that does belong to that user`, () => {
+                    it(`responds with 204 and removes the pack member`, () => {
+                        const idToRemove = 1;
+
+                        return supertest(app)
+                            .delete(`/api/dog-profiles/pack-members/${idToRemove}`)
+                            .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+                            .expect(204)
+                            .then(res => 
+                                supertest(app)
+                                    .get(`/api/dog-profiles/pack-members`)
+                                     .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+                                    .expect([])   
+                            );
+                    });    
+                });
+            });          
+        });
+    })
 });
