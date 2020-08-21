@@ -104,6 +104,28 @@ const ReviewsService = {
             .select('*')
             .orderBy('date_time');
     },
+    insertComment(db, newComment) {
+        return db
+            .insert(newComment)
+            .into('dog_date_review_comments')
+            .returning('*')
+            .then(([comment]) => comment);
+    },
+    getCommentById(db, id) {
+        return db('dog_date_review_comments')
+            .where({ id })
+            .first();
+    },
+    deleteComment(db, id) {
+        return db('dog_date_review_comments')
+            .where({ id })
+            .delete();
+    },
+    updateComment(db, id, newCommentFields) {
+        return db('dog_date_review_comments')
+            .where({ id })
+            .update(newCommentFields);
+    },
     serializeComment(comment) {
         const {
             id,
