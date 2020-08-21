@@ -15,6 +15,89 @@ cloudinary.config({
 });
 
 dogProfilesRouter
+    .route('/pack-members')
+    .all(requireAuth)
+    .get((req, res, next) => {
+        const user_id = req.user.id;
+        DogProfilesService.getPackByUserId(
+            req.app.get('db'),
+            user_id
+        )
+            .then(profiles => {
+                res.json(profiles
+                        .map(profile => {
+                            return {
+                                id: profile.id,
+                                user_id: profile.user_id,
+                                profile: DogProfilesService.serializeProfile(profile.profile),
+                            };
+                        })
+                );
+            })
+            .catch(next);
+    })
+    .post(jsonBodyParser, checkDogProfileExists, checkDogIsPackMember, (req, res, next) => {
+        const user_id = req.user.id;
+        const { pack_member_id } = req.body;
+
+        if (!pack_member_id) {
+            return res.status(400).json({
+                error: {
+                    message: `Request body must contain 'pack_member_id`,
+                },
+            });
+        }
+
+        const newPackMember = {
+            user_id,
+            pack_member_id
+        };
+
+        DogProfilesService.insertPackMember(
+            req.app.get('db'),
+            newPackMember
+        )
+            .then(pack_member => {
+                res
+                    .status(201)
+                    .location(path.posix.join(req.originalUrl, `/${pack_member.pack_member_id}`))
+                    .json({
+                        id: pack_member.id,
+                        user_id: pack_member.user_id,
+                        profile: DogProfilesService.serializeProfile(pack_member.profile),
+                    });
+            })
+            .catch(next);
+    });
+
+dogProfilesRouter
+    .route('/pack-members/:entry_id')
+    .all(checkPackMemberExists)
+    .all(requireAuth)
+    .get((req, res, next) => {
+        const pack_member = res.pack_member;
+        res.json({
+            id: pack_member.id,
+            user_id: pack_member.user_id,
+            profile: DogProfilesService.serializeProfile(pack_member.profile),
+        });
+    })
+    .delete((req, res, next) => {
+        if (res.pack_member.user_id !== req.user.id) {
+            return res.status(401).json({ error: `Unauthorized request` });
+        }
+
+        DogProfilesService.removePackMember(
+            req.app.get('db'),
+            req.params.entry_id
+        )
+            .then(() => {
+                res.status(204).end()
+            })
+            .catch(next);
+    });
+
+dogProfilesRouter
     .route('/user-dogs')
     .all(requireAuth)
     .get((req, res, next) => {
@@ -290,7 +373,7 @@ async function checkDogProfileExists(req, res, next) {
     try {
         const profile = await DogProfilesService.getById(
             req.app.get('db'),
-            req.params.dog_id
+            req.params.dog_id || req.body.pack_member_id
         );
 
         if (!profile) {
@@ -300,6 +383,45 @@ async function checkDogProfileExists(req, res, next) {
         }
 
         res.profile = profile;
+        next();
+    } catch(error) {
+        next(error);
+    }
+}
+
+async function checkDogIsPackMember(req, res, next) {
+    try {
+        const pack_member = await DogProfilesService.getPackMemberByUserIdAndPackMemberId(
+            req.app.get('db'),
+            req.user.id,
+            req.body.pack_member_id
+        );
+
+        if (pack_member) {
+            return res.status(304).json({
+                message: `Dog is already a pack member`,
+            });
+        }
+        next();
+    } catch(error) {
+        next(error);
+    }
+}
+
+async function checkPackMemberExists(req, res, next) {
+    try {
+        const pack_member = await DogProfilesService.getPackMemberById(
+            req.app.get('db'),
+            req.params.entry_id,
+        );
+
+        if (!pack_member) {
+            return res.status(404).json({ 
+                error: { message: `Pack member doesn't exist` }
+            });
+        }
+
+        res.pack_member = pack_member;
         next();
     } catch(error) {
         next(error);
