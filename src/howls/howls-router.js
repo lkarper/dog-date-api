@@ -82,6 +82,113 @@ howlsRouter
     });
 
 howlsRouter
+    .route('/user-saved')
+    .all(requireAuth)
+    .get((req, res, next) => {
+        const user_id = req.user.id;
+        HowlsService.getUserSavedHowls(
+            req.app.get('db'),
+            user_id
+        )
+            .then(savedHowls => {
+                const arrayOfHowlIds = savedHowls.map(howl => howl.howl_id);
+                HowlsService.getAllHowls(
+                    req.app.get('db')
+                )
+                    .then(howls => {
+                        const howlsToInclude = howls.filter(howl => arrayOfHowlIds.includes(howl.id));
+                        res.json(savedHowls
+                            .map(savedHowl => {
+                                return {
+                                    id: savedHowl.id,
+                                    user_id: savedHowl.user_id,
+                                    howl: HowlsService.serializeHowl(
+                                        howlsToInclude
+                                            .find(howl => howl.id === savedHowl.howl_id)
+                                    ),
+                                }
+                            })
+                        );
+                    })
+                    .catch(next);
+            })
+            .catch(next);
+    })
+    .post(jsonBodyParser, checkHowlExists, checkHowlIsSaved, (req, res, next) => {
+        const user_id = req.user.id;
+        const { howl_id } = req.body;
+
+        if (!howl_id) {
+            res.status(401).json({
+                error: {
+                    message: `Request body must contain 'howl_id'.`,
+                },
+            });
+        }
+
+        const newUserSavedHowl = {
+            user_id,
+            howl_id,
+        };
+
+        HowlsService.insertUserSavedHowl(
+            req.app.get('db'),
+            newUserSavedHowl
+        )
+            .then(savedHowl => {
+                HowlsService.getById(
+                    req.app.get('db'), 
+                    savedHowl.howl_id
+                )
+                    .then(howl => {
+                        res
+                        .status(201)
+                        .location(path.posix.join(req.originalUrl, `'/${howl.id}`))
+                        .json({
+                            id: savedHowl.id,
+                            user_id: savedHowl.user_id,
+                            howl: HowlsService.serializeHowl(howl),
+                        });
+                    })
+                    .catch(next);
+            })
+            .catch(next);
+    });
+
+howlsRouter
+    .route('/user-saved/:entry_id')
+    .all(requireAuth)
+    .all(checkSavedHowlExists)
+    .get((req, res, next) => {
+        const savedHowl = res.saved_entry;
+        HowlsService.getById(
+            req.app.get('db'),
+            savedHowl.howl_id
+        )
+            .then(howl => {
+                res.json({
+                    id: savedHowl.id,
+                    user_id: savedHowl.user_id,
+                    howl: HowlsService.serializeHowl(howl),
+                });
+            })
+            .catch(next);
+    })
+    .delete((req, res, next) => {
+        if (res.saved_entry.user_id !== req.user.id) {
+            return res.status(401).json({ error: `Unauthorizaed request` });
+        }
+        HowlsService.deleteUserSavedHowl(
+            req.app.get('db'),
+            req.params.entry_id
+        )
+            .then(() => {
+                res.status(204).end();
+            })
+            .catch(next);
+    });
+
+howlsRouter
     .route('/:howl_id')
     .all(requireAuth)
     .all(checkHowlExists)
@@ -161,7 +268,7 @@ async function checkHowlExists(req, res, next) {
     try {
         const howl = await HowlsService.getById(
             req.app.get('db'),
-            req.params.howl_id
+            req.params.howl_id || req.body.howl_id
         );
 
         if (!howl) {
@@ -171,6 +278,44 @@ async function checkHowlExists(req, res, next) {
         }
 
         res.howl = howl;
+        next();
+    } catch(error) {
+        next(error);
+    }
+}
+
+async function checkSavedHowlExists(req, res, next) {
+    try {
+        const savedEntry = await HowlsService.getUserSavedHowlById(
+            req.app.get('db'),
+            req.params.entry_id
+        );
+
+        if (!savedEntry) {
+            return res.status(404).json({
+                error: { message: `Saved howl doesn't exist` },
+            });
+        }
+        res.saved_entry = savedEntry;
+        next();
+    } catch(error) {
+        next(error);
+    }
+}
+
+async function checkHowlIsSaved(req, res, next) {
+    try {
+        const savedHowl = await HowlsService.getUserSavedHowlByUserIdandHowlId(
+            req.app.get('db'),
+            req.user.id,
+            req.body.howl_id
+        );
+
+        if (savedHowl) {
+            return res.status(304).json({
+                message: `Howl is already saved`,
+            });
+        }
         next();
     } catch(error) {
         next(error);
