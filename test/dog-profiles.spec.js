@@ -1,9 +1,6 @@
 const knex = require('knex');
 const app = require('../src/app');
 const helpers = require('./test-helpers');
-const supertest = require('supertest');
-const { expect } = require('chai');
-const { makeExpectedProfile } = require('./test-helpers');
 
 describe('Dog profiles endpoints', () => {
     let db;
@@ -725,7 +722,7 @@ describe('Dog profiles endpoints', () => {
                     helpers.seedDogProfileTables(db, testUsers, testDogs)
                 );
                 it(`creates a new pack-member and responds with 201 and the pack member profile`, () => {
-                    const expectedDogProfile = makeExpectedProfile(testUsers, testDogs[newPackMember.pack_member_id - 1]);
+                    const expectedDogProfile = helpers.makeExpectedProfile(testUsers, testDogs[newPackMember.pack_member_id - 1]);
                     return supertest(app)
                         .post('/api/dog-profiles/pack-members')
                         .set('Authorization', helpers.makeAuthHeader(testUser))
