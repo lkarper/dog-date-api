@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { expect } = require('chai');
 
 const makeUsersArray = () => {
     return [
@@ -150,6 +151,47 @@ const makeDogsArray = (users) => {
     ];
 }
 
+const makeHowls = (dogs) => {
+    return dogs.map((_, i) => {
+        return {
+            id: i + 1,
+            user_id: i + 1,
+            howl_title: `Test howl ${i + 1}`,
+            address: `Test address ${i + 1}`,
+            city: `Test city ${i + 1}`,
+            state: `PA`,
+            zipcode: '11111',
+            lat: `0`,
+            lon: `0`,
+            date: i % 2 === 0 ? `2020-08-${i + 11}` : '',
+            meeting_type: i % 2 === 0 ? 'once' : 'recurring',
+            personal_message: 'Ullamco Lorem velit excepteur magna nostrud eu proident sunt cillum culpa eiusmod dolore ipsum.'
+        };
+    });
+}
+
+const makeDogsInHowls = (dogs) => {
+    return dogs.map((dog, i) => {
+        return {
+            id: i + 1,
+            howl_id: i + 1,
+            dog_id: dog.id,
+        }
+    });
+} 
+
+const makeTimeWindows = (howls) => {
+    return howls.map((_, i) => {
+        return {
+            id: i + 1,
+            howl_id: i + 1,
+            day_of_week: i % 2 === 0 ? '' : 'Monday',
+            start_time: '08:00',
+            end_time: '18:00'
+        };
+    });
+} 
+
 const makePackMembersArray = (testUsers, testDogs) => {
     return testUsers.map((user, i) => {
         return {
@@ -168,6 +210,21 @@ const makeDogsFixtures = () => {
         testUsers, 
         testDogs, 
         testPackMembers 
+    };
+}
+
+const makeHowlsFixtures = () => {
+    const testUsers = makeUsersArray();
+    const testDogs = makeDogsArray(testUsers);
+    const testHowls = makeHowls(testDogs);
+    const testDogsInHowls = makeDogsInHowls(testDogs);
+    const testTimeWindows = makeTimeWindows(testHowls);
+    return {
+        testUsers,
+        testDogs,
+        testHowls,
+        testDogsInHowls,
+        testTimeWindows,
     };
 }
 
@@ -200,6 +257,15 @@ const seedDogProfileTables = (db, users, dogs) => {
     return db.transaction(async trx => {
         await seedUsers(trx, users);
         await trx.into('dog_date_dog_profiles').insert(dogs);
+    });
+}
+
+const seedHowls = (db, users, dogs, howls, dogsInHowls, timeWindows) => {
+    return db.transaction(async trx => {
+        await seedDogProfileTables(db, users, dogs);
+        await trx.into('dog_date_howls').insert(howls);
+        await trx.into('dog_date_dogs_in_howls').insert(dogsInHowls);
+        await trx.into('dog_date_time_windows').insert(timeWindows);
     });
 }
 
@@ -281,6 +347,48 @@ const makeExpectedPackMember = (users, user, dog) => {
     };
 }
 
+const makeExpectedHowl = (users, dogs, howl, timeWindows, dogsInHowls) => {
+
+    const dogId = dogsInHowls.find(dih => dih.howl_id === howl.id).dog_id;
+    const dog = dogs.find(dog => dog.id === dogId);
+    const profile = makeExpectedProfile(users, dog);
+    const { owner, id, ...rest } = profile;
+    const expectedProfile = rest;
+
+    const timeWindow = timeWindows.find(tw => tw.howl_id === howl.id);
+
+    return {
+        id: howl.id,
+        user_id: howl.id,
+        howl_title: `Test howl ${howl.id}`,
+        date: howl.id % 2 === 0 ? '' : `2020-08-${howl.id + 10}`,
+        meeting_type: howl.id % 2 === 0 ? 'recurring' : 'once',
+        personal_message: 'Ullamco Lorem velit excepteur magna nostrud eu proident sunt cillum culpa eiusmod dolore ipsum.',
+        dogs: [
+            {
+                dog_id: dogId,
+                profile: expectedProfile,
+                owner: owner
+            },
+        ],
+        location: {
+            address: `Test address ${howl.id}`,
+            city: `Test city ${howl.id}`,
+            state: 'PA',
+            zipcode: '11111',
+            lat: '0',
+            lon: '0',
+        },
+        time_windows: [
+            {
+                day_of_week: timeWindow.day_of_week,
+                start_time: timeWindow.start_time,
+                end_time: timeWindow.end_time,
+            },
+        ],
+    };
+}
+
 const makeMaliciousProfile = (user) => {
     const maliciousProfile = {
         id: 911,
@@ -354,5 +462,8 @@ module.exports = {
     makeProfileImgString,
     seedPackMembers,
     makeExpectedPackMember,
-    makePackMembersArray
+    makePackMembersArray,
+    makeHowlsFixtures,
+    seedHowls,
+    makeExpectedHowl,
 };
