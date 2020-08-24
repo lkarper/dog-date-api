@@ -190,7 +190,19 @@ const makeTimeWindows = (howls) => {
             end_time: '18:00'
         };
     });
-} 
+}
+
+const makeUserSavedHowls = (users, howls) => {
+    return howls.map((howl, i) => {
+        return users.map((user, index) => {
+            return {
+                id: (i * users.length) + (index + 1),
+                user_id: user.id,
+                howl_id: howl.id
+            };
+        });
+    });
+}
 
 const makePackMembersArray = (testUsers, testDogs) => {
     return testUsers.map((user, i) => {
@@ -219,12 +231,14 @@ const makeHowlsFixtures = () => {
     const testHowls = makeHowls(testDogs);
     const testDogsInHowls = makeDogsInHowls(testDogs);
     const testTimeWindows = makeTimeWindows(testHowls);
+    const testUserSavedHowls = makeUserSavedHowls(testUsers, testHowls).flat();
     return {
         testUsers,
         testDogs,
         testHowls,
         testDogsInHowls,
         testTimeWindows,
+        testUserSavedHowls
     };
 }
 
@@ -266,6 +280,13 @@ const seedHowls = (db, users, dogs, howls, dogsInHowls, timeWindows) => {
         await trx.into('dog_date_howls').insert(howls);
         await trx.into('dog_date_dogs_in_howls').insert(dogsInHowls);
         await trx.into('dog_date_time_windows').insert(timeWindows);
+    });
+}
+
+const seedUserSavedHowls = (db, users, dogs, howls, dogsInHowls, timeWindows, userSavedHowls) => {
+    return db.transaction(async trx => {
+        await seedHowls(db, users, dogs, howls, dogsInHowls, timeWindows);
+        await trx.into('dog_date_user_saved_howls').insert(userSavedHowls);
     });
 }
 
@@ -427,6 +448,67 @@ const makeMaliciousProfile = (user) => {
     };
 }
 
+const makeMaliciousHowl = (user, expectedProfile) => {
+    const badText = 'Naughty naughty very naughty <script>alert("xss");</script>'; 
+    const saniText = 'Naughty naughty very naughty &lt;script&gt;alert(\"xss\");&lt;/script&gt;';
+    const { owner_id, id, owner, ...rest } = expectedProfile;
+    const saniProfile = {
+        ...rest,
+    };
+    const maliciousHowl = {
+        id: 911,
+        user_id: 2,
+        howl_title: badText,
+        date: badText,
+        meeting_type: 'once',
+        personal_message: badText,
+        address: badText,
+        city: badText,
+        state: badText,
+        zipcode: badText,
+        lat: badText,
+        lon: badText,
+        dog_ids: [911],
+        time_windows: [{
+            day_of_week: badText,
+            start_time: badText,
+            end_time: badText,
+        }],
+    };
+    const expectedHowl = {
+        id: 911,
+        user_id: 2,
+        howl_title: saniText,
+        date: saniText,
+        meeting_type: 'once',
+        personal_message: saniText,
+        location: {
+            address: saniText,
+            city: saniText,
+            state: saniText,
+            zipcode: saniText,
+            lat: saniText,
+            lon: saniText,
+        },
+        dogs: [{
+            dog_id: 911,
+            profile: saniProfile,
+            owner: owner
+        }],
+        time_windows: [{
+            day_of_week: saniText,
+            start_time: saniText,
+            end_time: saniText,
+        }],
+    };
+
+    return {
+        maliciousHowl,
+        expectedHowl
+    };
+
+}
+
 const seedMaliciousProfile = (db, user, profile) => {
     return seedUsers(db, [user])
         .then(() => 
@@ -466,4 +548,6 @@ module.exports = {
     makeHowlsFixtures,
     seedHowls,
     makeExpectedHowl,
+    makeMaliciousHowl,
+    seedUserSavedHowls,
 };

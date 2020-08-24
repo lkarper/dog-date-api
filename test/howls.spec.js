@@ -1,6 +1,8 @@
 const knex = require('knex');
 const app = require('../src/app');
 const helpers = require('./test-helpers');
+const supertest = require('supertest');
+const { expect } = require('chai');
 
 describe(`Howls endpoints`, () => {
     let db;
@@ -11,6 +13,7 @@ describe(`Howls endpoints`, () => {
         testHowls,
         testDogsInHowls,
         testTimeWindows,
+        testUserSavedHowls,
     } = helpers.makeHowlsFixtures();
 
     before('make knex instance', () => {
@@ -63,9 +66,58 @@ describe(`Howls endpoints`, () => {
                     .expect(200, expectedHowls);
             });
         });
+
+        context(`Given an XSS attack howl`, () => {
+            const testUser = helpers.makeUsersArray()[1];
+            const {
+                maliciousProfile,
+                expectedProfile,
+            } = helpers.makeMaliciousProfile(testUser);
+            const {
+                maliciousHowl,
+                expectedHowl
+            } = helpers.makeMaliciousHowl(testUser, expectedProfile);
+
+            beforeEach(`insert malicious data`, () => {
+                const { dog_ids, time_windows, ...rest } = maliciousHowl;
+                const timeWindows = [{
+                    howl_id: 911,
+                    day_of_week: time_windows[0].day_of_week,
+                    start_time: time_windows[0].start_time,
+                    end_time: time_windows[0].end_time,
+                }];
+                return helpers.seedHowls(
+                    db,
+                    testUsers,
+                    [maliciousProfile],
+                    [{...rest}],
+                    [{
+                        howl_id: 911,
+                        dog_id: 911,
+                    }],
+                    timeWindows              
+                );
+            });
+
+            it(`removes XSS attack content`, () => {
+                return supertest(app)
+                    .get('/api/howls')
+                    .expect(200)
+                    .expect(res => {
+                        expect(res.body[0].id).to.eql(expectedHowl.id);
+                        expect(res.body[0].user_id).to.eql(expectedHowl.user_id);
+                        expect(res.body[0].howl_title).to.eql(expectedHowl.howl_title);
+                        expect(res.body[0].date).to.eql(expectedHowl.date);
+                        expect(res.body[0].meeting_type).to.eql(expectedHowl.meeting_type);
+                        expect(res.body[0].personal_message).to.eql(expectedHowl.personal_message);
+                        expect(res.body[0].dogs).to.eql(expectedHowl.dogs);
+                        expect(res.body[0].time_windows).to.eql(expectedHowl.time_windows);
+                    });
+            });
+        });
     });
 
-    describe.only(`POST /api/howls`, () => {
+    describe(`POST /api/howls`, () => {
         beforeEach(() => 
             helpers.seedDogProfileTables(
                 db,
@@ -128,7 +180,508 @@ describe(`Howls endpoints`, () => {
                         });
                 });
             });
+
+            context(`Given that all required fields are present in body`, () => {
+                it(`creates a howl, responds with 201 and the new howl`, () => {
+                    return supertest(app)
+                        .post('/api/howls')
+                        .set('Authorization', helpers.makeAuthHeader(testUser))
+                        .send(newHowl)
+                        .expect(201)
+                        .expect(res => {
+                            const expectedResponse = helpers.makeExpectedHowl(
+                                testUsers, 
+                                testDogs, 
+                                res.body, 
+                                testTimeWindows,
+                                testDogsInHowls
+                            );
+                            expect(res.headers.location).to.eql(`/api/howls/${res.body.id}`);
+                            expect(res.body).to.have.property('id');
+                            expect(res.body.user_id).to.eql(testUser.id);
+                            expect(res.body.howl_title).to.eql(newHowl.howl_title);
+                            expect(res.body.date).to.eql(newHowl.date);
+                            expect(res.body.meeting_type).to.eql(newHowl.meeting_type);
+                            expect(res.body.personal_message).to.eql(newHowl.personal_message);
+                            expect(res.body.dogs).to.eql(expectedResponse.dogs);
+                            expect(res.body.location).to.eql({
+                                address: newHowl.address,
+                                city: newHowl.city,
+                                state: newHowl.state,
+                                zipcode: newHowl.zipcode,
+                                lat: newHowl.lat,
+                                lon: newHowl.lon,
+                            });
+                            expect(res.body.time_windows).to.eql(expectedResponse.time_windows);
+                        })
+                        .then(postRes => {
+                            return supertest(app)
+                                .get(`/api/howls/${postRes.body.id}`)
+                                .set('Authorization', helpers.makeAuthHeader(testUser))
+                                .expect(res => {
+                                    const expectedResponse = helpers.makeExpectedHowl(
+                                        testUsers, 
+                                        testDogs, 
+                                        res.body, 
+                                        testTimeWindows,
+                                        testDogsInHowls
+                                    );
+                                    expect(res.body).to.have.property('id');
+                                    expect(res.body.user_id).to.eql(testUser.id);
+                                    expect(res.body.howl_title).to.eql(newHowl.howl_title);
+                                    expect(res.body.date).to.eql(newHowl.date);
+                                    expect(res.body.meeting_type).to.eql(newHowl.meeting_type);
+                                    expect(res.body.personal_message).to.eql(newHowl.personal_message);
+                                    expect(res.body.dogs).to.eql(expectedResponse.dogs);
+                                    expect(res.body.location).to.eql({
+                                        address: newHowl.address,
+                                        city: newHowl.city,
+                                        state: newHowl.state,
+                                        zipcode: newHowl.zipcode,
+                                        lat: newHowl.lat,
+                                        lon: newHowl.lon,
+                                    });
+                                    expect(res.body.time_windows).to.eql(expectedResponse.time_windows);
+                                });
+                        });
+                });
+            });
         });
 
+    });
+
+    describe(`GET /user-saved`, () => {
+        
+        context(`Given no saved howls`, () => {
+            beforeEach(() => 
+                helpers.seedHowls(
+                    db,
+                    testUsers,
+                    testDogs,
+                    testHowls,
+                    testDogsInHowls,
+                    testTimeWindows
+                )
+            );
+
+            it(`responds with 200 and an empty array`, () => {
+                return supertest(app)
+                    .get(`/api/howls/user-saved`)
+                    .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+                    .expect(200, []);
+            });
+        });
+
+        context(`Given that there are saved howls`, () => {
+
+            beforeEach(() => 
+                helpers.seedUserSavedHowls(
+                    db,
+                    testUsers,
+                    testDogs,
+                    testHowls,
+                    testDogsInHowls,
+                    testTimeWindows,
+                    testUserSavedHowls
+                )
+            );
+
+            context(`Given that there is no authorization header`, () => {
+                it(`responds with 401 and an error message`, () => {
+                    return supertest(app)
+                        .get(`/api/howls/user-saved`)
+                        .expect(401, { error: `Missing bearer token` });
+                });
+            });
+
+            context(`Given that there is an authorization header`, () => {
+
+                it(`responds with 200 and the user's saved howls`, () => {
+                    const testUser = testUsers[0];
+                    const expectedHowls = testUserSavedHowls
+                        .filter(ush => ush.user_id === testUser.id)
+                        .map(ush => {
+                            const howl = testHowls.find(th => th.id === ush.howl_id);
+                            const expectedHowl = helpers.makeExpectedHowl(
+                                testUsers,
+                                testDogs,
+                                howl,
+                                testTimeWindows,
+                                testDogsInHowls,
+                            );
+                            return {
+                                id: (howl.id - 1) * 5 + 1,
+                                user_id: testUser.id,
+                                howl: expectedHowl
+                            }
+                        });
+                    return supertest(app)
+                        .get(`/api/howls/user-saved`)
+                        .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+                        .expect(200, expectedHowls);
+                });
+            });
+        });
+    });
+
+    describe(`POST /api/howls/user-saved`, () => {
+        const testUser = testUsers[0];
+
+        const newSavedHowl = {
+            user_id: testUser.id,
+            howl_id: 2,
+        };
+
+        context(`Given there is no authorization header`, () => {
+            beforeEach(() => 
+                helpers.seedUserSavedHowls(
+                    db,
+                    testUsers,
+                    testDogs,
+                    testHowls,
+                    testDogsInHowls,
+                    testTimeWindows,
+                    testUserSavedHowls
+                )
+            );
+            it(`responds with 401 and an error message`, () => {
+                return supertest(app)
+                    .post(`/api/howls/user-saved`)
+                    .send(newSavedHowl)
+                    .expect(401, { error: `Missing bearer token` });
+            });
+        });
+
+        context(`Given there is an authorization header`, () => {
+
+            context(`Given that the 'howl_id' fields is missing from the body`, () => {
+                
+                beforeEach(`insert howls`, () => 
+                    helpers.seedHowls(
+                        db,
+                        testUsers,
+                        testDogs,
+                        testHowls,
+                        testDogsInHowls,
+                        testTimeWindows
+                    )
+                );
+                it(`responds with 400 and an error message`, () => {
+                    return supertest(app)
+                        .post('/api/howls/user-saved')
+                        .set('Authorization', helpers.makeAuthHeader(testUser))
+                        .send({})
+                        .expect(400, {
+                            error: {
+                                message: `Request body must contain 'howl_id'.`,
+                            },
+                        });
+                });
+            });
+
+            context(`Given that the user has not yet saved the howl, the howl exists, and the body is properly formatted`, () => {
+                beforeEach(`insert howls`, () => 
+                    helpers.seedHowls(
+                        db,
+                        testUsers,
+                        testDogs,
+                        testHowls,
+                        testDogsInHowls,
+                        testTimeWindows
+                    )
+                );
+                
+                it(`creates a saved howl and responds with 201 and the howl`, () => {
+                    const howl = testHowls.find(th => th.id === newSavedHowl.howl_id);
+                    const expectedHowl = helpers.makeExpectedHowl(
+                        testUsers,
+                        testDogs,
+                        howl,
+                        testTimeWindows,
+                        testDogsInHowls
+                    );
+                    return supertest(app)
+                        .post('/api/howls/user-saved')
+                        .set('Authorization', helpers.makeAuthHeader(testUser))
+                        .send(newSavedHowl)
+                        .expect(201)
+                        .expect(res => {
+                            expect(res.headers.location).to.eql(`/api/howls/user-saved/${res.body.id}`);
+                            expect(res.body).to.have.property('id');
+                            expect(res.body.user_id).to.eql(testUser.id);
+                            expect(res.body.howl).to.eql(expectedHowl);
+                        })
+                        .then(postRes => {
+                            return supertest(app)
+                                .get(`/api/howls/user-saved/${postRes.body.id}`)
+                                .set('Authorization', helpers.makeAuthHeader(testUser))
+                                .expect(res => {
+                                    expect(res.body).to.have.property('id');
+                                    expect(res.body.user_id).to.eql(testUser.id);
+                                    expect(res.body.howl).to.eql(expectedHowl);
+                                });
+                        });
+                });
+            });
+
+            context(`Given that the user has already saved the howl`, () => {
+                beforeEach(() => 
+                    helpers.seedUserSavedHowls(
+                        db,
+                        testUsers,
+                        testDogs,
+                        testHowls,
+                        testDogsInHowls,
+                        testTimeWindows,
+                        testUserSavedHowls
+                    )
+                );
+                const howlForTest = testHowls[0];
+                const newDogInHowl = testDogsInHowls[0];
+                const testWindow = testTimeWindows[0];
+                const { id, user_id, ...rest } = howlForTest;
+        
+                const testUser = testUsers[0];
+                const newHowl = {
+                    ...rest,
+                    dog_ids: [ newDogInHowl.id ],
+                    time_windows: [{
+                        day_of_week: testWindow.day_of_week,
+                        start_time: testWindow.start_time,
+                        end_time: testWindow.end_time,
+                    }],
+                };
+
+                it(`responds with 200 and the howl`, () => {
+                    return supertest(app)
+                        .post('/api/howls/user-saved')
+                        .set('Authorization', helpers.makeAuthHeader(testUser))
+                        .send({
+                            user_id: testUser.id,
+                            howl_id: howlForTest.id
+                        })
+                        .expect(200)
+                        .expect(res => {
+                            const expectedResponse = helpers.makeExpectedHowl(
+                                testUsers, 
+                                testDogs, 
+                                res.body, 
+                                testTimeWindows,
+                                testDogsInHowls
+                            );
+                            expect(res.body).to.have.property('id');
+                            expect(res.body.user_id).to.eql(testUser.id);
+                            expect(res.body.howl_title).to.eql(newHowl.howl_title);
+                            expect(res.body.date).to.eql(newHowl.date);
+                            expect(res.body.meeting_type).to.eql(newHowl.meeting_type);
+                            expect(res.body.personal_message).to.eql(newHowl.personal_message);
+                            expect(res.body.dogs).to.eql(expectedResponse.dogs);
+                            expect(res.body.location).to.eql({
+                                address: newHowl.address,
+                                city: newHowl.city,
+                                state: newHowl.state,
+                                zipcode: newHowl.zipcode,
+                                lat: newHowl.lat,
+                                lon: newHowl.lon,
+                            });
+                            expect(res.body.time_windows).to.eql(expectedResponse.time_windows);
+                        });
+                        
+                });
+            });
+
+            context(`given that the howl doesn't exist`, () => {
+                beforeEach(() => 
+                    helpers.seedUserSavedHowls(
+                        db,
+                        testUsers,
+                        testDogs,
+                        testHowls,
+                        testDogsInHowls,
+                        testTimeWindows,
+                        testUserSavedHowls
+                    )
+                );
+
+                it(`responds with 404 and an error message`, () => {
+                    return supertest(app)
+                        .post(`/api/howls/user-saved`)
+                        .set('Authorization', helpers.makeAuthHeader(testUser))
+                        .send({
+                            user_id: 1,
+                            howl_id: 100,
+                        })
+                        .expect(404, {
+                            error: { message: `Howl doesn't exist` },
+                        });
+                });
+            });
+        });
+    });
+
+    describe(`GET /api/howls/user-saved/:entry_id`, () => {
+        context(`Given no saved howls`, () => {
+            beforeEach(`insert howls`, () => 
+                helpers.seedHowls(
+                    db,
+                    testUsers,
+                    testDogs,
+                    testHowls,
+                    testDogsInHowls,
+                    testTimeWindows
+                )
+            );
+
+            it(`responds with 404`, () => {
+                return supertest(app)
+                    .get('/api/howls/user-saved/100')
+                    .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+                    .expect(404, {
+                        error: { message: `Saved howl doesn't exist` },
+                    });
+            });
+        });
+
+        context(`Given that there are user saved howls`, () => {
+            beforeEach(() => 
+                helpers.seedUserSavedHowls(
+                    db,
+                    testUsers,
+                    testDogs,
+                    testHowls,
+                    testDogsInHowls,
+                    testTimeWindows,
+                    testUserSavedHowls
+                )
+            );
+
+            context(`Given that there is no authorization header`, () => {
+                it(`responds with 401 and an error message`, () => {
+                    return supertest(app)
+                        .get(`/api/howls/user-saved/1`)
+                        .expect(401, { error: `Missing bearer token` });
+                });
+            });
+
+            context(`given that there is an authorization header`, () => {
+                it(`responds with 200 and the specified howl`, () => {
+                    const entryId = 1;
+                    const expectedResponse = {
+                        id: 1,
+                        user_id: testUsers[0].id,
+                        howl: helpers.makeExpectedHowl(
+                            testUsers,
+                            testDogs,
+                            testHowls.find(th => th.id === 1),
+                            testTimeWindows,
+                            testDogsInHowls
+                        ),
+                    };
+                    return supertest(app)
+                        .get(`/api/howls/user-saved/${entryId}`)
+                        .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+                        .expect(200, expectedResponse);
+                });
+            });
+        });
+    });
+
+    describe(`DELETE /api/howls/user-saved/:entry_id`, () => {
+        
+        context('Given no user saved howls', () => {
+            beforeEach(`insert howls`, () => 
+                helpers.seedHowls(
+                    db,
+                    testUsers,
+                    testDogs,
+                    testHowls,
+                    testDogsInHowls,
+                    testTimeWindows
+                )
+            );
+
+            it('responds with 404', () => {
+                return supertest(app)
+                    .delete('/api/howls/user-saved/100')
+                    .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+                    .expect(404, {
+                        error: { message: `Saved howl doesn't exist` },
+                    });
+            });
+        });
+
+        context.only(`Given there are user saved howls`, () => {
+            beforeEach(() => 
+                helpers.seedUserSavedHowls(
+                    db,
+                    testUsers,
+                    testDogs,
+                    testHowls,
+                    testDogsInHowls,
+                    testTimeWindows,
+                    testUserSavedHowls
+                )
+            );
+
+            context(`Given that there is no authorization header`, () => {
+
+                it(`responds with 401 and an error message`, () => {
+                    return supertest(app)
+                        .delete(`/api/howls/user-saved/1`)
+                        .expect(401, { error: `Missing bearer token` });
+                });
+            });
+
+            context(`Given that there is an authorization header`, () => {
+                context(`Given that a user attempts to delete a saved howl that doesn't belong to them`, () => {
+
+                    
+                    it(`responds with 401`, () => {
+                        const idToRemove = 3;
+                        return supertest(app)
+                        .delete(`/api/howls/user-saved/${idToRemove}`)
+                        .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+                        .expect(401, { error: `Unauthorized request` });
+                    })
+
+                });
+
+                context(`Given that a user attempts to delete a saved howl that does belong to them`, () => {
+                    it(`responds with 204`, () => {
+                        
+                        const idToRemove = 1;
+
+                        const expectedHowls = testUserSavedHowls
+                            .filter(ush => ush.user_id === testUsers[0].id)
+                            .map(ush => {
+                                const howl = testHowls.find(th => th.id === ush.howl_id);
+                                const expectedHowl = helpers.makeExpectedHowl(
+                                    testUsers,
+                                    testDogs,
+                                    howl,
+                                    testTimeWindows,
+                                    testDogsInHowls,
+                                );
+                                return {
+                                    id: (howl.id - 1) * 5 + 1,
+                                    user_id: testUsers[0].id,
+                                    howl: expectedHowl
+                                }
+                            }).filter(howl => howl.id !== idToRemove);
+
+                        return supertest(app)
+                            .delete(`/api/howls/user-saved/1`)
+                            .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+                            .expect(204)
+                            .then(res => 
+                                supertest(app)
+                                    .get(`/api/howls/user-saved`)
+                                    .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+                                    .expect(200, expectedHowls)
+                            );
+                    });
+                });
+            });
+        });
     });
 });
