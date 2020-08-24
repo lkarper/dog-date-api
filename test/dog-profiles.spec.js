@@ -166,78 +166,78 @@ describe('Dog profiles endpoints', () => {
                 it(`creates a dog profile, responds with 201 and the new profile`, () => {
                     newProfile.profile_img = helpers.makeProfileImgString();
                     return supertest(app)
-                    .post('/api/dog-profiles')
-                    .set('Authorization', helpers.makeAuthHeader(testUser))
-                    .send(newProfile)
-                    .expect(201)
-                    .expect(res => {
-                        expect(res.headers.location).to.eql(`/api/dog-profiles/${res.body.id}`)
-                        expect(res.body).to.have.property('id');
-                        expect(res.body.profile_img_url).to.not.eql('');
-                        expect(res.body.name).to.eql(newProfile.name);
-                        expect(res.body.age_years).to.eql(newProfile.age_years);
-                        expect(res.body.age_months).to.eql(newProfile.age_months);
-                        expect(res.body.sex).to.eql(newProfile.sex);
-                        expect(res.body.breed).to.eql(newProfile.breed);
-                        expect(res.body.weight).to.eql(newProfile.weight);
-                        expect(res.body.energy).to.eql(newProfile.energy);
-                        expect(res.body.temperment).to.eql(newProfile.temperment);
-                        expect(res.body.obedience).to.eql(newProfile.obedience);
-                        expect(res.body.dislikes_puppies).to.eql(newProfile.dislikes_puppies);
-                        expect(res.body.dislikes_men).to.eql(newProfile.dislikes_men);
-                        expect(res.body.dislikes_women).to.eql(newProfile.dislikes_women);
-                        expect(res.body.dislikes_children).to.eql(newProfile.dislikes_children);
-                        expect(res.body.recently_adopted).to.eql(newProfile.recently_adopted);
-                        expect(res.body.prefers_people).to.eql(newProfile.prefers_people);
-                        expect(res.body.leash_aggression).to.eql(newProfile.leash_aggression);
-                        expect(res.body.elderly_dog).to.eql(newProfile.elderly_dog);
-                        expect(res.body.little_time_with_other_dogs).to.eql(newProfile.little_time_with_other_dogs);
-                        expect(res.body.much_experience_with_other_dogs).to.eql(newProfile.much_experience_with_other_dogs);
-                        expect(res.body.aggressive).to.eql(newProfile.aggressive);
-                        expect(res.body.owner_description).to.eql(newProfile.owner_description);
-                        expect(res.body.owner).to.eql({
-                            id: testUser.id,
-                            username: testUser.username,
-                            email: testUser.email,
-                            phone: testUser.phone,
-                        });
-                    })
-                    .then(postRes => {
-                        return supertest(app)
-                            .get(`/api/dog-profiles/${postRes.body.id}`)
-                            .set('Authorization', helpers.makeAuthHeader(testUser))
-                            .expect(res => {
-                                expect(res.body).to.have.property('id');
-                                expect(res.body.name).to.eql(newProfile.name);
-                                expect(res.body.profile_img_url).to.not.eql('');
-                                expect(res.body.age_years).to.eql(newProfile.age_years);
-                                expect(res.body.age_months).to.eql(newProfile.age_months);
-                                expect(res.body.sex).to.eql(newProfile.sex);
-                                expect(res.body.breed).to.eql(newProfile.breed);
-                                expect(res.body.weight).to.eql(newProfile.weight);
-                                expect(res.body.energy).to.eql(newProfile.energy);
-                                expect(res.body.temperment).to.eql(newProfile.temperment);
-                                expect(res.body.obedience).to.eql(newProfile.obedience);
-                                expect(res.body.dislikes_puppies).to.eql(newProfile.dislikes_puppies);
-                                expect(res.body.dislikes_men).to.eql(newProfile.dislikes_men);
-                                expect(res.body.dislikes_women).to.eql(newProfile.dislikes_women);
-                                expect(res.body.dislikes_children).to.eql(newProfile.dislikes_children);
-                                expect(res.body.recently_adopted).to.eql(newProfile.recently_adopted);
-                                expect(res.body.prefers_people).to.eql(newProfile.prefers_people);
-                                expect(res.body.leash_aggression).to.eql(newProfile.leash_aggression);
-                                expect(res.body.elderly_dog).to.eql(newProfile.elderly_dog);
-                                expect(res.body.little_time_with_other_dogs).to.eql(newProfile.little_time_with_other_dogs);
-                                expect(res.body.much_experience_with_other_dogs).to.eql(newProfile.much_experience_with_other_dogs);
-                                expect(res.body.aggressive).to.eql(newProfile.aggressive);
-                                expect(res.body.owner_description).to.eql(newProfile.owner_description);
-                                expect(res.body.owner).to.eql({
-                                    id: testUser.id,
-                                    username: testUser.username,
-                                    email: testUser.email,
-                                    phone: testUser.phone,
-                                });
+                        .post('/api/dog-profiles')
+                        .set('Authorization', helpers.makeAuthHeader(testUser))
+                        .send(newProfile)
+                        .expect(201)
+                        .expect(res => {
+                            expect(res.headers.location).to.eql(`/api/dog-profiles/${res.body.id}`)
+                            expect(res.body).to.have.property('id');
+                            expect(res.body.profile_img_url).to.not.eql('');
+                            expect(res.body.name).to.eql(newProfile.name);
+                            expect(res.body.age_years).to.eql(newProfile.age_years);
+                            expect(res.body.age_months).to.eql(newProfile.age_months);
+                            expect(res.body.sex).to.eql(newProfile.sex);
+                            expect(res.body.breed).to.eql(newProfile.breed);
+                            expect(res.body.weight).to.eql(newProfile.weight);
+                            expect(res.body.energy).to.eql(newProfile.energy);
+                            expect(res.body.temperment).to.eql(newProfile.temperment);
+                            expect(res.body.obedience).to.eql(newProfile.obedience);
+                            expect(res.body.dislikes_puppies).to.eql(newProfile.dislikes_puppies);
+                            expect(res.body.dislikes_men).to.eql(newProfile.dislikes_men);
+                            expect(res.body.dislikes_women).to.eql(newProfile.dislikes_women);
+                            expect(res.body.dislikes_children).to.eql(newProfile.dislikes_children);
+                            expect(res.body.recently_adopted).to.eql(newProfile.recently_adopted);
+                            expect(res.body.prefers_people).to.eql(newProfile.prefers_people);
+                            expect(res.body.leash_aggression).to.eql(newProfile.leash_aggression);
+                            expect(res.body.elderly_dog).to.eql(newProfile.elderly_dog);
+                            expect(res.body.little_time_with_other_dogs).to.eql(newProfile.little_time_with_other_dogs);
+                            expect(res.body.much_experience_with_other_dogs).to.eql(newProfile.much_experience_with_other_dogs);
+                            expect(res.body.aggressive).to.eql(newProfile.aggressive);
+                            expect(res.body.owner_description).to.eql(newProfile.owner_description);
+                            expect(res.body.owner).to.eql({
+                                id: testUser.id,
+                                username: testUser.username,
+                                email: testUser.email,
+                                phone: testUser.phone,
                             });
-                    });
+                        })
+                        .then(postRes => {
+                            return supertest(app)
+                                .get(`/api/dog-profiles/${postRes.body.id}`)
+                                .set('Authorization', helpers.makeAuthHeader(testUser))
+                                .expect(res => {
+                                    expect(res.body).to.have.property('id');
+                                    expect(res.body.name).to.eql(newProfile.name);
+                                    expect(res.body.profile_img_url).to.not.eql('');
+                                    expect(res.body.age_years).to.eql(newProfile.age_years);
+                                    expect(res.body.age_months).to.eql(newProfile.age_months);
+                                    expect(res.body.sex).to.eql(newProfile.sex);
+                                    expect(res.body.breed).to.eql(newProfile.breed);
+                                    expect(res.body.weight).to.eql(newProfile.weight);
+                                    expect(res.body.energy).to.eql(newProfile.energy);
+                                    expect(res.body.temperment).to.eql(newProfile.temperment);
+                                    expect(res.body.obedience).to.eql(newProfile.obedience);
+                                    expect(res.body.dislikes_puppies).to.eql(newProfile.dislikes_puppies);
+                                    expect(res.body.dislikes_men).to.eql(newProfile.dislikes_men);
+                                    expect(res.body.dislikes_women).to.eql(newProfile.dislikes_women);
+                                    expect(res.body.dislikes_children).to.eql(newProfile.dislikes_children);
+                                    expect(res.body.recently_adopted).to.eql(newProfile.recently_adopted);
+                                    expect(res.body.prefers_people).to.eql(newProfile.prefers_people);
+                                    expect(res.body.leash_aggression).to.eql(newProfile.leash_aggression);
+                                    expect(res.body.elderly_dog).to.eql(newProfile.elderly_dog);
+                                    expect(res.body.little_time_with_other_dogs).to.eql(newProfile.little_time_with_other_dogs);
+                                    expect(res.body.much_experience_with_other_dogs).to.eql(newProfile.much_experience_with_other_dogs);
+                                    expect(res.body.aggressive).to.eql(newProfile.aggressive);
+                                    expect(res.body.owner_description).to.eql(newProfile.owner_description);
+                                    expect(res.body.owner).to.eql({
+                                        id: testUser.id,
+                                        username: testUser.username,
+                                        email: testUser.email,
+                                        phone: testUser.phone,
+                                    });
+                                });
+                        });
                 });
             });
             
@@ -250,7 +250,7 @@ describe('Dog profiles endpoints', () => {
                         .send(newProfile)
                         .expect(201)
                         .expect(res => {
-                            expect(res.headers.location).to.eql(`/api/dog-profiles/${res.body.id}`)
+                            expect(res.headers.location).to.eql(`/api/dog-profiles/${res.body.id}`);
                             expect(res.body).to.have.property('id');
                             expect(res.body.profile_img_url).to.eql('');
                             expect(res.body.name).to.eql(newProfile.name);
@@ -751,7 +751,7 @@ describe('Dog profiles endpoints', () => {
                 beforeEach(() =>
                     helpers.seedPackMembers(db, testUsers, testDogs, testPackMembers)
                 );
-                it(`responds with 304`, () => {
+                it(`responds with 200 and the profile`, () => {
                     return supertest(app)
                         .post('/api/dog-profiles/pack-members')
                         .set('Authorization', helpers.makeAuthHeader(testUser))
@@ -759,7 +759,14 @@ describe('Dog profiles endpoints', () => {
                             user_id: 1,
                             pack_member_id: 4
                         })
-                        .expect(304);
+                        .expect(200)
+                        .expect(res => {
+                            const expectedDogProfile = helpers.makeExpectedProfile(testUsers, testDogs[3]);
+                            expect(res.body).to.have.property('id');
+                            expect(res.body.user_id).to.eql(1)
+                            expect(res.body.profile).to.eql(expectedDogProfile);
+                        })
+                       
                 });
             });
 
@@ -769,15 +776,15 @@ describe('Dog profiles endpoints', () => {
                 );
                 it(`responds with 404 and an error message`, () => {
                     return supertest(app)
-                    .post('/api/dog-profiles/pack-members')
-                    .set('Authorization', helpers.makeAuthHeader(testUser))
-                    .send({
-                        user_id: 1,
-                        pack_member_id: 44
-                    })
-                    .expect(404, { error: 
-                        { message: `Dog profile doesn't exist` }
-                    });
+                        .post('/api/dog-profiles/pack-members')
+                        .set('Authorization', helpers.makeAuthHeader(testUser))
+                        .send({
+                            user_id: 1,
+                            pack_member_id: 44
+                        })
+                        .expect(404, { error: 
+                            { message: `Dog profile doesn't exist` }
+                        });
                 });
             });
         });
@@ -881,12 +888,12 @@ describe('Dog profiles endpoints', () => {
                             .delete(`/api/dog-profiles/pack-members/${idToRemove}`)
                             .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
                             .expect(204)
-                            .then(res => 
-                                supertest(app)
+                            .then(res => {
+                                return supertest(app)
                                     .get(`/api/dog-profiles/pack-members`)
-                                     .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
-                                    .expect([])   
-                            );
+                                    .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+                                    .expect([]);
+                            });
                     });    
                 });
             });          
