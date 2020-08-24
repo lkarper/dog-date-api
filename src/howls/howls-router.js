@@ -117,48 +117,56 @@ howlsRouter
     .post(jsonBodyParser, checkHowlExists, checkHowlIsSaved, (req, res, next) => {
         const user_id = req.user.id;
         const { howl_id } = req.body;
+        const { savedHowl } = res;
 
-        if (!howl_id) {
-            res.status(401).json({
-                error: {
-                    message: `Request body must contain 'howl_id'.`,
-                },
-            });
+
+        if (savedHowl) {
+            HowlsService.getById(
+                req.app.get('db'),
+                savedHowl.howl_id
+            )
+                .then(howl => {
+                    return res
+                        .status(200)
+                        .json(HowlsService.serializeHowl(howl));
+                })
+                .catch(next);
+        } else {
+
+            const newUserSavedHowl = {
+                user_id,
+                howl_id,
+            };
+
+            HowlsService.insertUserSavedHowl(
+                req.app.get('db'),
+                newUserSavedHowl
+            )
+                .then(savedHowl => {
+                    HowlsService.getById(
+                        req.app.get('db'), 
+                        savedHowl.howl_id
+                    )
+                        .then(howl => {
+                            res
+                                .status(201)
+                                .location(path.posix.join(req.originalUrl, `/${savedHowl.id}`))
+                                .json({
+                                    id: savedHowl.id,
+                                    user_id: savedHowl.user_id,
+                                    howl: HowlsService.serializeHowl(howl),
+                                });
+                        })
+                        .catch(next);
+                })
+                .catch(next);
         }
-
-        const newUserSavedHowl = {
-            user_id,
-            howl_id,
-        };
-
-        HowlsService.insertUserSavedHowl(
-            req.app.get('db'),
-            newUserSavedHowl
-        )
-            .then(savedHowl => {
-                HowlsService.getById(
-                    req.app.get('db'), 
-                    savedHowl.howl_id
-                )
-                    .then(howl => {
-                        res
-                        .status(201)
-                        .location(path.posix.join(req.originalUrl, `'/${howl.id}`))
-                        .json({
-                            id: savedHowl.id,
-                            user_id: savedHowl.user_id,
-                            howl: HowlsService.serializeHowl(howl),
-                        });
-                    })
-                    .catch(next);
-            })
-            .catch(next);
     });
 
 howlsRouter
     .route('/user-saved/:entry_id')
-    .all(requireAuth)
     .all(checkSavedHowlExists)
+    .all(requireAuth)
     .get((req, res, next) => {
         const savedHowl = res.saved_entry;
         HowlsService.getById(
@@ -176,7 +184,7 @@ howlsRouter
     })
     .delete((req, res, next) => {
         if (res.saved_entry.user_id !== req.user.id) {
-            return res.status(401).json({ error: `Unauthorizaed request` });
+            return res.status(401).json({ error: `Unauthorized request` });
         }
         HowlsService.deleteUserSavedHowl(
             req.app.get('db'),
@@ -266,6 +274,14 @@ howlsRouter
 
 async function checkHowlExists(req, res, next) {
     try {
+
+        if (!req.params.howl_id && !req.body.howl_id) {
+            return res.status(400).json({
+                error: {
+                    message: `Request body must contain 'howl_id'.`,
+                },
+            });
+        }
         const howl = await HowlsService.getById(
             req.app.get('db'),
             req.params.howl_id || req.body.howl_id
@@ -311,11 +327,8 @@ async function checkHowlIsSaved(req, res, next) {
             req.body.howl_id
         );
 
-        if (savedHowl) {
-            return res.status(304).json({
-                message: `Howl is already saved`,
-            });
-        }
+        res.savedHowl = savedHowl || null;
+
         next();
     } catch(error) {
         next(error);
