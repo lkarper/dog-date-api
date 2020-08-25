@@ -633,14 +633,13 @@ describe(`Howls endpoints`, () => {
             context(`Given that there is an authorization header`, () => {
                 context(`Given that a user attempts to delete a saved howl that doesn't belong to them`, () => {
 
-                    
                     it(`responds with 401`, () => {
                         const idToRemove = 3;
                         return supertest(app)
-                        .delete(`/api/howls/user-saved/${idToRemove}`)
-                        .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
-                        .expect(401, { error: `Unauthorized request` });
-                    })
+                            .delete(`/api/howls/user-saved/${idToRemove}`)
+                            .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+                            .expect(401, { error: `Unauthorized request` });
+                    });
 
                 });
 
