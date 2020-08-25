@@ -150,6 +150,50 @@ const makeDogsArray = (users) => {
     ];
 }
 
+const makeReviews = (users, dogs) => {
+    return dogs.map((dog, i) => {
+        return users.map((user, index) => {
+            return {
+                id: (i * users.length) + (index + 1),
+                date_created: '2020-07-31T19:35:31.457Z',
+                dog_id: dog.id,
+                reviewer: user.username,
+                friendliness_dogs: 3,
+                friendliness_people: 3,
+                playing_interest: 3,
+                obedience: 3,
+                profile_accuracy: 3,
+                location_suitability: 3,
+                address: '123 Fake St',
+                city: 'fake city',
+                state: 'MA',
+                zipcode: '00000', 
+                lat: '0',
+                lon: '0',
+                date: '2020-08-25',
+                start_time: '08:00',
+                end_time: '12:00',
+                personal_message: 'Irure ut aliquip dolor quis ad ullamco proident voluptate aliquip.'
+            };
+        });
+    });
+}
+
+const makeComments = (users, reviews) => {
+    return reviews.map((review, i) => {
+        return users.map((user, index) => {
+            return {
+                id: (i * users.length) + (index + 1),
+                review_id: review.id,
+                commenter: user.username,
+                date_time: '2020-07-31T19:35:31.457Z',
+                comment: 'Cillum deserunt ullamco quis mollit voluptate consequat incididunt pariatur.',
+                edited: false
+            };
+        });
+    });
+}
+
 const makeHowls = (dogs) => {
     return dogs.map((_, i) => {
         return {
@@ -238,6 +282,19 @@ const makeHowlsFixtures = () => {
         testDogsInHowls,
         testTimeWindows,
         testUserSavedHowls
+    };
+}
+
+const makeReviewsFixtures = () => {
+    const testUsers = makeUsersArray();
+    const testDogs = makeDogsArray(testUsers);
+    const testReviews = makeReviews(testUsers, testDogs).flat();
+    const testComments = makeComments(testUsers, testReviews).flat();
+    return {
+        testUsers,
+        testDogs,
+        testReviews,
+        testComments
     };
 }
 
@@ -732,6 +789,21 @@ const seedPackMembers = (db, users, dogs, packMembers) => {
     });
 }
 
+const seedReviewsWithoutComments = (db, users, dogs, reviews) => {
+    return db.transaction(async trx => {
+        await seedDogProfileTables(db, users, dogs);
+        await trx.into('dog_date_reviews').insert(reviews);
+     });
+}
+
+const seedReviews = (db, users, dogs, reviews, comments) => {
+    return db.transaction(async trx => {
+       await seedDogProfileTables(db, users, dogs);
+       await trx.into('dog_date_reviews').insert(reviews);
+       await trx.into('dog_date_review_comments').insert(comments);
+    });
+}
+
 const makeExpectedProfile = (users, dog) => {
     const {
         id,
@@ -845,6 +917,68 @@ const makeExpectedHowl = (users, dogs, howl, timeWindows, dogsInHowls) => {
     };
 }
 
+const makeExpectedReview = (review, dogs, testComments) => {
+    const {
+        id,
+        date_created,
+        reviewer,
+        friendliness_dogs,
+        friendliness_people,
+        playing_interest,
+        obedience,
+        profile_accuracy,
+        location_suitability,
+        date,
+        start_time,
+        end_time,
+        personal_message,
+        address,
+        city,
+        state,
+        zipcode,
+        lat,
+        lon,
+        dog_id,
+    } = review;
+
+    const dog = dogs.find(d => d.id === dog_id);
+    const { owner, id: dogId, owner_id, ...rest } = dog;
+    const dog_profile = { ...rest };
+    const comments = testComments.filter(c => c.review_id === id);
+
+    return {
+        id,
+        date_created,
+        reviewer,
+        friendliness_dogs,
+        friendliness_people,
+        playing_interest,
+        obedience,
+        profile_accuracy,
+        location_suitability,
+        date,
+        start_time,
+        end_time,
+        personal_message,
+        location: {
+            address,
+            city,
+            state,
+            zipcode,
+            lat,
+            lon
+        },
+        dog_profile, 
+        comments: comments.map(c => {
+            const { date_time, ...rest } = c;
+            return {
+                ...rest,
+                date_time: `${date_time.slice(0, date_time.length - 1 )}+00:00`
+            };
+        }),
+    };
+}
+
 const makeMaliciousProfile = (user) => {
     const maliciousProfile = {
         id: 911,
@@ -944,6 +1078,91 @@ const makeMaliciousHowl = (user, expectedProfile) => {
 
 }
 
+const makeMaliciousReview = (user) => {
+    const badText = 'Naughty naughty very naughty <script>alert("xss");</script>'; 
+
+    return {
+        id: 911,
+        date_created: '2020-07-31T19:35:31.457Z',
+        dog_id: 911,
+        reviewer: user.username,
+        friendliness_dogs: 3,
+        friendliness_people: 3,
+        playing_interest: 3,
+        obedience: 3,
+        profile_accuracy: 3,
+        location_suitability: 3,
+        address: badText,
+        city: badText,
+        state: badText,
+        zipcode: badText,
+        lat: badText,
+        lon: badText,
+        date: badText,
+        start_time: badText,
+        end_time: badText,
+        personal_message: badText,
+    };
+}
+
+const makeMaliciousComment = (user) => {
+    const badText = 'Naughty naughty very naughty <script>alert("xss");</script>'; 
+
+    return {
+        id: 911,
+        review_id: 911,
+        commenter: user.username,
+        date_time: '2020-07-31T19:35:31.457Z',
+        comment: badText,
+        edited: false,
+    };
+}
+
+const makeSanitizedReview = (user) => {
+    const saniText = 'Naughty naughty very naughty &lt;script&gt;alert(\"xss\");&lt;/script&gt;';
+
+    const { expectedProfile } = makeMaliciousProfile(user);
+
+    const dog = expectedProfile;
+    const { owner, id: dogId, owner_id, ...rest } = dog;
+    const dog_profile = { ...rest };
+
+    return {
+        id: 911,
+        date_created: '2020-07-31T19:35:31.457Z',
+        reviewer: user.username,
+        friendliness_dogs: 3,
+        friendliness_people: 3,
+        playing_interest: 3,
+        obedience: 3,
+        profile_accuracy: 3,
+        location_suitability: 3,
+        date: saniText,
+        start_time: saniText,
+        end_time: saniText,
+        personal_message: saniText,
+        location: {
+            address: saniText,
+            city: saniText,
+            state: saniText,
+            zipcode: saniText,
+            lat: saniText,
+            lon: saniText
+        },
+        dog_profile,
+        comments: [
+            {
+                id: 911,
+                review_id: 911,
+                commenter: user.username,
+                date_time: `2020-07-31T19:35:31.457+00:00`,
+                comment: saniText,
+                edited: false,
+            },
+        ],
+    };
+}
+
 const seedMaliciousProfile = (db, user, profile) => {
     return seedUsers(db, [user])
         .then(() => 
@@ -987,4 +1206,11 @@ module.exports = {
     seedUserSavedHowls,
     seedTablesForHowlsSearch,
     makeDataArrayForTestingSearch,
+    seedReviews,
+    makeReviewsFixtures,
+    makeExpectedReview,
+    makeMaliciousReview,
+    makeMaliciousComment,
+    makeSanitizedReview,
+    seedReviewsWithoutComments,
 };
