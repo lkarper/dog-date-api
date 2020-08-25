@@ -260,6 +260,7 @@ howlsRouter
                 },
             });
         }
+        howlToUpdate.user_id = req.user.id;
 
         HowlsService.updateHowl(
             req.app.get('db'),
