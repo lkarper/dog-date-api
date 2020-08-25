@@ -229,7 +229,10 @@ reviewsRouter
             newComment
         )
             .then(comment => {
-                res.json(ReviewsService.serializeComment(comment));
+                res
+                    .status(201)
+                    .location(path.posix.join(req.originalUrl, `/${comment.id}`))
+                    .json(ReviewsService.serializeComment(comment));
             })
             .catch(next);
     });
