@@ -205,7 +205,7 @@ howlsRouter
     })
     .delete((req, res, next) => {
         if (res.howl.user_id !== req.user.id) {
-            return res.status(401).json({ error: `Unauthorizaed request` });
+            return res.status(401).json({ error: `Unauthorized request` });
         }
 
         HowlsService.deleteHowl(
@@ -219,7 +219,7 @@ howlsRouter
     })
     .patch(jsonBodyParser, (req, res, next) => {
         if (res.howl.user_id !== req.user.id) {
-            return res.status(401).json({ error: `Unauthorizaed request` });
+            return res.status(401).json({ error: `Unauthorized request` });
         }
 
         const {
