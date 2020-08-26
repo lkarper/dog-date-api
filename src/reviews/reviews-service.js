@@ -54,7 +54,8 @@ const ReviewsService = {
                         'little_time_with_other_dogs', dp.little_time_with_other_dogs,
                         'much_experience_with_other_dogs', dp.much_experience_with_other_dogs,
                         'aggressive', dp.aggressive,
-                        'owner_description', dp.owner_description
+                        'owner_description', dp.owner_description,
+                        'owner_id', dp.owner_id
                     ) AS "dog_profile"`
                 ),
                 db.raw(
@@ -79,6 +80,10 @@ const ReviewsService = {
     getReviewsByDog(db, dog_id) {
         return this.getAllReviews(db)
             .where('ddr.dog_id', dog_id);
+    },
+    getReviewsByOwner(db, owner_id) {
+        return this.getAllReviews(db)
+            .where('dp.owner_id', owner_id);
     },
     insertReview(db, newReview) {
         return db

@@ -85,6 +85,20 @@ reviewsRouter
     });
 
 reviewsRouter
+    .route('/by-owner')
+    .all(requireAuth)
+    .get((req, res, next) => {
+        ReviewsService.getReviewsByOwner(
+            req.app.get('db'),
+            req.user.id
+        )
+            .then(reviews => {
+                res.json(reviews.map(ReviewsService.serializeReview));
+            })
+            .catch(next);
+    });
+
+reviewsRouter
     .route('/by-dog/:dog_id')
     .all(requireAuth)
     .get((req, res, next) => {
