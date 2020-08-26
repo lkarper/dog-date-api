@@ -119,7 +119,6 @@ howlsRouter
         const { howl_id } = req.body;
         const { savedHowl } = res;
 
-
         if (savedHowl) {
             HowlsService.getById(
                 req.app.get('db'),
