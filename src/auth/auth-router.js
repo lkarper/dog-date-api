@@ -32,8 +32,18 @@ authRouter
                         }
                         const sub = dbUser.username;
                         const payload = { user_id: dbUser.id};
+                        const {
+                            id,
+                            username,
+                            email,
+                            phone
+                        } = dbUser;
                         res.send({
-                            authToken: AuthService.createJWT(sub, payload)
+                            authToken: AuthService.createJWT(sub, payload),
+                            id,
+                            username,
+                            email,
+                            phone,
                         });
                     });
             })
