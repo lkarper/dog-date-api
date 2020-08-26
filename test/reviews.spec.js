@@ -502,7 +502,7 @@ describe(`Reviews endpoints`, () => {
         });
     });
 
-    describe.only('POST /api/reviews/:review_id/comments', () => {
+    describe('POST /api/reviews/:review_id/comments', () => {
         const testUser = testUsers[0];
 
         beforeEach('seed reviews', () => 
@@ -567,7 +567,7 @@ describe(`Reviews endpoints`, () => {
                 });
 
                 context(`Given that all required fields are present in the body`, () => {
-                    it(`creates a comments and responds with 201 and the new comment`, () => {
+                    it(`creates a comment and responds with 201 and the new comment`, () => {
                         return supertest(app)
                             .post('/api/reviews/1/comments')
                             .set('Authorization', helpers.makeAuthHeader(testUser))
@@ -596,8 +596,232 @@ describe(`Reviews endpoints`, () => {
                             );
                     });
                 });
+            });
+        });
+    });
 
+    describe(`GET /api/reviews/:review_id/comments/:comment_id`, () => {
+        
+        const testUser = testUsers[0];
 
+        beforeEach(`seed reviews and comments`, () => 
+            helpers.seedReviews(
+                db,
+                testUsers,
+                testDogs,
+                testReviews,
+                testComments
+            )
+        );
+        
+        context(`Given that the comment requested doesn't exist`, () => {
+            it(`responds with 404 and an error message`, () => {
+                return supertest(app)
+                    .get('/api/reviews/1/comments/1000')
+                    .set('Authorization', helpers.makeAuthHeader(testUser))
+                    .expect(404, {
+                        error: { message: `Comment doesn't exist` }
+                    });
+            });
+        });
+
+        context(`Given that the comment requested does exist`, () => {
+
+            context(`Given that there is no authorization header`, () => {
+                it(`responds with 401 and an error message`, () => {
+                    return supertest(app)
+                        .get(`/api/reviews/1/comments/1`)
+                        .expect(401, { error: `Missing bearer token` });
+                });
+            });
+
+            context(`Given that there is an authorization header`, () => {
+                it(`responds with 200 and the requested comment`, () => {
+                    const expectedComment = testComments[0];
+                    return supertest(app)
+                        .get(`/api/reviews/1/comments/1`)
+                        .set('Authorization', helpers.makeAuthHeader(testUser))
+                        .expect(200, expectedComment);
+                });
+            });
+        });
+    });
+
+    describe(`DELETE /api/reviews/:review_id/comments/:comment_id`, () => {
+
+        const testUser = testUsers[0];
+
+        beforeEach(`seed reviews and comments`, () => 
+            helpers.seedReviews(
+                db,
+                testUsers,
+                testDogs,
+                testReviews,
+                testComments
+            )
+        );
+
+        context(`Given that the requested comment does not exist`, () => {
+            it(`responds with 404 and an error message`, () => {
+                return supertest(app)
+                    .delete('/api/reviews/1/comments/1000')
+                    .set('Authorization', helpers.makeAuthHeader(testUser))
+                    .expect(404, {
+                        error: { message: `Comment doesn't exist` }
+                    });
+            });
+        });
+
+        context(`Given that the requested comment does exist`, () => {
+            
+            context(`Given that there is no authorization header`, () => {
+                it(`responds with 401 and an error message`, () => {
+                    return supertest(app)
+                        .delete(`/api/reviews/1/comments/1`)
+                        .expect(401, { error: `Missing bearer token` });
+                });
+            });
+
+            context(`Given that there is an authorization header`, () => {
+
+                context(`Given that a user attempts to delete a comment that does not belong to them`, () => {
+                    it(`responds with 401 and an error message`, () => {
+                        const idToDelete = 3;
+                        return supertest(app)
+                            .delete(`/api/reviews/1/comments/${idToDelete}`)
+                            .set('Authorization', helpers.makeAuthHeader(testUser))
+                            .expect(401, { error: `Unauthorized request` });
+                    });
+                });
+
+                context(`Given that a user attempts to delete a comment that does belong to them`, () => {
+                    it(`responds with 204 and deletes the comment`, () => {
+                        const idToDelete = 1;
+                        const expectedComments = testComments
+                            .filter(c => c.review_id === 1)    
+                            .filter(c => c.id !== idToDelete);
+                        return supertest(app)
+                            .delete(`/api/reviews/1/comments/${idToDelete}`)
+                            .set('Authorization', helpers.makeAuthHeader(testUser))
+                            .expect(204)
+                            .then(res =>
+                                supertest(app)
+                                    .get('/api/reviews/1/comments')
+                                    .set('Authorization', helpers.makeAuthHeader(testUser))
+                                    .expect(200, expectedComments)    
+                            );
+                    });
+                });
+            });
+        });
+    });
+
+    describe(`PATCH /api/reviews/:review_id/comments/:comment_id`, () => {
+        
+        const testUser = testUsers[0];
+        
+        beforeEach(`seed reviews and comments`, () => 
+            helpers.seedReviews(
+                db,
+                testUsers,
+                testDogs,
+                testReviews,
+                testComments
+            )
+        );
+
+        context(`Given that the requested comment doesn't exist`, () => {
+            it(`responds with 404 and an error message`, () => {
+                return supertest(app)
+                    .patch('/api/reviews/1/comments/1000')
+                    .set('Authorization', helpers.makeAuthHeader(testUser))
+                    .send({
+                        comment: 'Sint aliqua duis est eiusmod nulla adipisicing officia proident nisi labore.',
+                    })
+                    .expect(404, {
+                        error: { message: `Comment doesn't exist` }
+                    });
+            });
+        });
+
+        context(`Given that the requested comment does exist`, () => {
+
+            context(`Given that there is no authorization header`, () => {
+                it(`responds with 401 and an error message`, () => {
+                    return supertest(app)
+                        .patch(`/api/reviews/1/comments/1`)
+                        .send({
+                            comment: 'Sint aliqua duis est eiusmod nulla adipisicing officia proident nisi labore.',
+                        })
+                        .expect(401, { error: `Missing bearer token` });
+                });
+            });
+
+            context(`Given that there is an authorization header`, () => {
+
+                context(`Given that the user attempts to patch a comment that does not belong to them`, () => {
+                    it(`responds with 401 and an error message`, () => {
+                        const idToPatch = 2;
+                        return supertest(app)
+                            .patch(`/api/reviews/1/comments/${idToPatch}`)
+                            .set('Authorization', helpers.makeAuthHeader(testUser))
+                            .send({
+                                comment: 'Sint aliqua duis est eiusmod nulla adipisicing officia proident nisi labore.',
+                            })
+                            .expect(401, { error: `Unauthorized request` });
+                    });
+                });
+
+                context(`Given that the user attempts to patch a comment that does belong to them`, () => {
+                    const idToPatch = 1;
+
+                    context(`Given that the user attempts to patch a comment with no fields in the body`, () => {
+                        it(`responds with 400 and an error message`, () => {
+                            return supertest(app)
+                                .patch(`/api/reviews/1/comments/${idToPatch}`)
+                                .set('Authorization', helpers.makeAuthHeader(testUser))
+                                .send({})
+                                .expect(400, {
+                                    error: {
+                                        message: `Request body must contain one of 'date_time', 'comment', 'edited'.`
+                                    },
+                                });
+                        });
+                    });
+
+                    context(`Given that the user attempts to patch a comment with a properly formatted body`, () => {
+                        it(`responds with 204 and updates the comment`, () => {
+                        
+                            
+                            
+                            const expectedComment = {
+                                id: 1,
+                                review_id: 1,
+                                commenter: testUser.username,
+                                date_time: '2020-08-26T19:35:31.457Z',
+                                comment: 'Anim nulla laboris exercitation mollit in.',
+                                edited: true,
+                            };
+
+                            return supertest(app)
+                                .patch(`/api/reviews/1/comments/${idToPatch}`)
+                                .set('Authorization', helpers.makeAuthHeader(testUser))
+                                .send({
+                                    date_time: '2020-08-26T19:35:31.457Z',
+                                    comment: 'Anim nulla laboris exercitation mollit in.',
+                                    edited: true,
+                                })
+                                .expect(204)
+                                .then(res => 
+                                    supertest(app)
+                                        .get(`/api/reviews/${expectedComment.review_id}/comments/${expectedComment.id}`)
+                                        .set('Authorization', helpers.makeAuthHeader(testUser))
+                                        .expect(200, expectedComment)
+                                );
+
+                        });
+                    });
+                });
             });
         });
     });
