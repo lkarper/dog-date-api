@@ -974,4 +974,66 @@ describe(`Howls endpoints`, () => {
             });
         });
     });
+
+    describe(`GET /api/howls/by-dog/:dog_id`, () => {
+        
+        beforeEach(`seed howls`, () =>
+            helpers.seedHowls(
+                db,
+                testUsers,
+                testDogs,
+                testHowls,
+                testDogsInHowls,
+                testTimeWindows
+            )
+        );
+
+        context(`Given that there are no howls involving a dog`, () => {
+            it(`responds with 200 and an empty array`, () => {
+                return supertest(app)
+                    .get('/api/howls/by-dog/1000')
+                    .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+                    .expect(200, []);
+            });
+        });
+
+        context(`Given that there are howls involving a dog`, () => {
+            context(`Given that there is no authorization header`, () => {
+                it(`responds with 401 and an error message`, () => {
+                    return supertest(app)
+                        .get(`/api/howls/by-dog/1`)
+                        .expect(401, { error: `Missing bearer token` });
+                });
+            });
+
+            context(`Given that there is an authorization header`, () => {
+                it(`responds with 200 and the howls involving a dog`, () => {
+                    const dogIdToFind = 1;
+                    const expectedHowls = testHowls
+                        .map(howl =>
+                            helpers.makeExpectedHowl(
+                                testUsers,
+                                testDogs,
+                                howl,
+                                testTimeWindows,
+                                testDogsInHowls
+                            )
+                        )
+                        .filter(h => {
+                            let include = false;
+                            h.dogs.forEach(dog => {
+                                if (dog.dog_id === dogIdToFind) {
+                                    include = true;
+                                }
+                            });
+                            return include;
+                        });
+                    return supertest(app)
+                        .get(`/api/howls/by-dog/${dogIdToFind}`)
+                        .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+                        .expect(200, expectedHowls)
+                });
+            });
+        });
+    });
 });

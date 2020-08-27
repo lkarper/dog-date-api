@@ -880,7 +880,7 @@ const makeExpectedHowl = (users, dogs, howl, timeWindows, dogsInHowls) => {
     const dogId = dogsInHowls.find(dih => dih.howl_id === howl.id).dog_id;
     const dog = dogs.find(dog => dog.id === dogId);
     const profile = makeExpectedProfile(users, dog);
-    const { owner, ...rest } = profile;
+    const { owner, id, ...rest } = profile;
     const expectedProfile = rest;
 
     const timeWindow = timeWindows.find(tw => tw.howl_id === howl.id);
