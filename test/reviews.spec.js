@@ -1,6 +1,7 @@
 const knex = require('knex');
 const app = require('../src/app');
 const helpers = require('./test-helpers');
+const supertest = require('supertest');
 
 describe(`Reviews endpoints`, () => {
     let db;
@@ -819,6 +820,61 @@ describe(`Reviews endpoints`, () => {
 
                         });
                     });
+                });
+            });
+        });
+    });
+
+    describe(`GET /api/reviews/by-owner`, () => {
+
+        const testUser = testUsers[0];
+
+        context(`Given there are no reviews of a user's dogs`, () => {
+            beforeEach('seeds dogs and users', () =>
+                helpers.seedDogProfileTables(
+                    db,
+                    testUsers,
+                    testDogs
+                )
+            );
+
+            it(`responds with 200 and an empty array`, () => {
+                return supertest(app)
+                    .get('/api/reviews/by-owner')
+                    .set('Authorization', helpers.makeAuthHeader(testUser))
+                    .expect(200, []);
+            });
+        });
+
+        context(`Given there are reviews of a user's dogs`, () => {
+            beforeEach(`seed reviews and comments`, () => 
+                helpers.seedReviews(
+                    db,
+                    testUsers,
+                    testDogs,
+                    testReviews,
+                    testComments
+                )
+            );
+
+            context(`Given that there is no authorization header`, () => {
+                it(`responds with 401 and an error message`, () => {
+                    return supertest(app)
+                        .get(`/api/reviews/by-owner`)
+                        .expect(401, { error: `Missing bearer token` });
+                });
+            });
+
+            context(`Given that there is an authorization header`, () => {
+                it(`responds with the reviews for a user's dogs`, () => {
+                    const expectedReviews = testReviews
+                        .map(r => helpers.makeExpectedReview(r, testDogs, testComments))
+                        .filter(r => r.dog_profile.owner_id === testUser.id);
+
+                    return supertest(app)
+                        .get('/api/reviews/by-owner')
+                        .set('Authorization', helpers.makeAuthHeader(testUser))
+                        .expect(200, expectedReviews);
                 });
             });
         });
