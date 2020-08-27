@@ -192,6 +192,7 @@ const ReviewsService = {
                 lon: xss(location.lon),
             },
             dog_profile: {
+                id: dog_profile.id,
                 name: xss(dog_profile.name), 
                 profile_img_url: xss(dog_profile.profile_img_url),
                 age_years: dog_profile.age_years,
@@ -214,6 +215,7 @@ const ReviewsService = {
                 much_experience_with_other_dogs: dog_profile.much_experience_with_other_dogs,
                 aggressive: dog_profile.aggressive,
                 owner_description: xss(dog_profile.owner_description),
+                owner_id: dog_profile.owner_id,
             },
             comments: comments 
                 ? 
