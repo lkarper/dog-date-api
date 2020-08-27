@@ -880,7 +880,7 @@ const makeExpectedHowl = (users, dogs, howl, timeWindows, dogsInHowls) => {
     const dogId = dogsInHowls.find(dih => dih.howl_id === howl.id).dog_id;
     const dog = dogs.find(dog => dog.id === dogId);
     const profile = makeExpectedProfile(users, dog);
-    const { owner, id, ...rest } = profile;
+    const { owner, ...rest } = profile;
     const expectedProfile = rest;
 
     const timeWindow = timeWindows.find(tw => tw.howl_id === howl.id);
@@ -942,8 +942,10 @@ const makeExpectedReview = (review, dogs, testComments) => {
     } = review;
 
     const dog = dogs.find(d => d.id === dog_id);
-    const { owner, id: dogId, owner_id, ...rest } = dog;
-    const dog_profile = { ...rest };
+    const { owner, ...rest } = dog;
+    const dog_profile = { 
+        ...rest,
+    };
     const comments = testComments.filter(c => c.review_id === id);
 
     return {
@@ -1124,8 +1126,8 @@ const makeSanitizedReview = (user) => {
     const { expectedProfile } = makeMaliciousProfile(user);
 
     const dog = expectedProfile;
-    const { owner, id: dogId, owner_id, ...rest } = dog;
-    const dog_profile = { ...rest };
+    const { owner, ...rest } = dog;
+    const dog_profile = { ...rest, owner_id: owner.id };
 
     return {
         id: 911,
