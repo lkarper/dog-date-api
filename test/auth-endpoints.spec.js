@@ -86,6 +86,10 @@ describe(`Auth Endpoints`, () => {
                     .send(userValidCreds)
                     .expect(200, {
                         authToken: expectedToken,
+                        id: testUser.id,
+                        username: testUser.username,
+                        email: testUser.email,
+                        phone: testUser.phone
                     });
             });
 
