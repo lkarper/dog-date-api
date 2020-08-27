@@ -82,6 +82,26 @@ howlsRouter
     });
 
 howlsRouter
+    .route('/by-dog/:dog_id')
+    .all(requireAuth)
+    .get((req, res, next) => {
+        HowlsService.getAllHowls(req.app.get('db'))
+            .then(howls => {
+                const dogHowls = howls.filter(h => {
+                    let include = false;
+                    h.dogs.forEach(dog => {
+                        if (dog.dog_id === parseInt(req.params.dog_id)) {
+                            include = true;
+                        }
+                    });
+                    return include;
+                });
+                res.json(dogHowls.map(HowlsService.serializeHowl));
+            })
+            .catch(next);
+    });
+
+howlsRouter
     .route('/user-saved')
     .all(requireAuth)
     .get((req, res, next) => {
