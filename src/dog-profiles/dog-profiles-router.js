@@ -6,7 +6,7 @@ const { requireAuth } = require('../middleware/jwt-auth');
 const { CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET } = require('../config');
 
 const dogProfilesRouter = express.Router();
-const jsonBodyParser = express.json();
+const jsonBodyParser = express.json({limit: '10mb'});
 
 cloudinary.config({
     cloud_name: CLOUD_NAME,
@@ -175,6 +175,7 @@ dogProfilesRouter
         const {
             name, 
             profile_img,
+            profile_img_url,
             age_years,
             age_months,
             sex, 
@@ -225,7 +226,7 @@ dogProfilesRouter
         if (numberOfValues === 0) {
             return res.status(400).json({
                 error: {
-                    message: `Request body must contain one of 'name', 'profile_img', 'age_years', 'age_months', 'sex', 'breed', 'weight', 'energy', 'temperment', 'obedience', 'dislikes_puppies', 'dislikes_men', 'dislikes_women', 'dislikes_children', 'recently_adopted', 'prefers_people', 'leash_aggression', 'elderly_dog', 'little_time_with_other_dogs', 'much_experience_with_other_dogs', 'aggressive', 'owner_description'.`,
+                    message: `Request body must contain one of 'name', 'profile_img', 'profile_img_url', 'age_years', 'age_months', 'sex', 'breed', 'weight', 'energy', 'temperment', 'obedience', 'dislikes_puppies', 'dislikes_men', 'dislikes_women', 'dislikes_children', 'recently_adopted', 'prefers_people', 'leash_aggression', 'elderly_dog', 'little_time_with_other_dogs', 'much_experience_with_other_dogs', 'aggressive', 'owner_description'.`,
                 }
             });
         }
