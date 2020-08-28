@@ -20,6 +20,7 @@ reviewsRouter
         const {
           date_created,
           dog_id,
+          review_title,
           reviewer,
           friendliness_dogs,
           friendliness_people,
@@ -42,6 +43,7 @@ reviewsRouter
         const newReview = {
             date_created,
             dog_id,
+            review_title,
             reviewer,
             friendliness_dogs,
             friendliness_people,
@@ -140,6 +142,7 @@ reviewsRouter
 
         const {
             date_created,
+            review_title,
             dog_id,
             friendliness_dogs,
             friendliness_people,
@@ -161,6 +164,7 @@ reviewsRouter
   
         const reviewToUpdate = {
             date_created,
+            review_title,
             dog_id,
             friendliness_dogs,
             friendliness_people,
@@ -184,7 +188,7 @@ reviewsRouter
         if (numberOfValues === 0) {
             return res.status(400).json({
                 error: {
-                    message: `Request body must contain one of 'date_created', 'dog_id', 'friendliness_dogs', 'friendliness_people', 'playing_interest', 'obedience', 'profile_accuracy', 'location_suitability', 'address', 'city', 'state', 'zipcode', 'lat', 'lon', 'date', 'start_time', 'end_time', 'personal_message'.`,
+                    message: `Request body must contain one of 'date_created', 'review_title', 'dog_id', 'friendliness_dogs', 'friendliness_people', 'playing_interest', 'obedience', 'profile_accuracy', 'location_suitability', 'address', 'city', 'state', 'zipcode', 'lat', 'lon', 'date', 'start_time', 'end_time', 'personal_message'.`,
                 }
             });
         }

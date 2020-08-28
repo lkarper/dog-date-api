@@ -7,6 +7,7 @@ const ReviewsService = {
             .select(
                 'ddr.id',
                 'ddr.date_created',
+                'ddr.review_title',
                 'ddr.reviewer',
                 'ddr.friendliness_dogs',
                 'ddr.friendliness_people',
@@ -153,6 +154,7 @@ const ReviewsService = {
         const {
             id,
             date_created,
+            review_title,
             reviewer,
             friendliness_dogs,
             friendliness_people,
@@ -172,6 +174,7 @@ const ReviewsService = {
         return {
             id,
             date_created,
+            review_title: xss(review_title),
             reviewer: xss(reviewer),
             friendliness_dogs,
             friendliness_people,
