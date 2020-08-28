@@ -216,6 +216,23 @@ howlsRouter
     });
 
 howlsRouter
+    .route('/by-user')
+    .all(requireAuth)
+    .get((req, res, next) => {
+        HowlsService.getAllHowls(
+            req.app.get('db')
+        )
+            .then(howls => {
+                const userHowls = howls
+                    .filter(h => h.user_id === req.user.id)
+                    .map(HowlsService.serializeHowl);
+
+                return res.status(200).json(userHowls);
+            })
+            .catch(next);
+    });
+
+howlsRouter
     .route('/:howl_id')
     .all(requireAuth)
     .all(checkHowlExists)
