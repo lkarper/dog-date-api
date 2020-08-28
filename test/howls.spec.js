@@ -1036,4 +1036,64 @@ describe(`Howls endpoints`, () => {
             });
         });
     });
+
+    describe(`GET /api/howls/by-user`, () => {
+
+        context(`Given that the user has not yet created a howl`, () => {
+            beforeEach(`Seed dogs and users`, () =>
+                helpers.seedDogProfileTables(
+                    db,
+                    testUsers,
+                    testDogs
+                )
+            );
+            it(`responds with 200 and an empty array`, () => {
+                return supertest(app)
+                    .get('/api/howls/by-user')
+                    .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+                    .expect(200, []);
+            });
+        });
+
+        context(`Given that the user has created one or more howls`, () => {
+            beforeEach('seed howls', () =>
+                helpers.seedHowls(
+                    db,
+                    testUsers,
+                    testDogs,
+                    testHowls,
+                    testDogsInHowls,
+                    testTimeWindows
+                )
+            );
+            
+            context(`Given that there is no authorization header`, () => {
+                it(`responds with 401 and an error message`, () => {
+                    return supertest(app)
+                        .get(`/api/howls/by-user`)
+                        .expect(401, { error: `Missing bearer token` });
+                });
+            });
+
+            context(`Given that there is an authorization header`, () => {
+                it(`responds with 200 and the howls that a user has created`, () => {
+                    const expectedHowls = testHowls
+                        .map(howl =>
+                            helpers.makeExpectedHowl(
+                                testUsers,
+                                testDogs,
+                                howl,
+                                testTimeWindows,
+                                testDogsInHowls
+                            )
+                        )
+                        .filter(h => h.user_id === testUsers[0].id);
+                    return supertest(app)
+                        .get('/api/howls/by-user')
+                        .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+                        .expect(200, expectedHowls);
+                });
+            });
+        });
+    });
 });
