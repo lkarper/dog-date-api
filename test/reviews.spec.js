@@ -419,7 +419,7 @@ describe(`Reviews endpoints`, () => {
                                 .send({})
                                 .expect(400, {
                                     error: {
-                                        message: `Request body must contain one of 'date_created', 'dog_id', 'friendliness_dogs', 'friendliness_people', 'playing_interest', 'obedience', 'profile_accuracy', 'location_suitability', 'address', 'city', 'state', 'zipcode', 'lat', 'lon', 'date', 'start_time', 'end_time', 'personal_message'.`,
+                                        message: `Request body must contain one of 'date_created', 'review_title', 'dog_id', 'friendliness_dogs', 'friendliness_people', 'playing_interest', 'obedience', 'profile_accuracy', 'location_suitability', 'address', 'city', 'state', 'zipcode', 'lat', 'lon', 'date', 'start_time', 'end_time', 'personal_message'.`,
                                     }
                                 });
                         });

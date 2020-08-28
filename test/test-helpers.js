@@ -157,6 +157,7 @@ const makeReviews = (users, dogs) => {
                 id: (i * users.length) + (index + 1),
                 date_created: '2020-07-31T19:35:31.457Z',
                 dog_id: dog.id,
+                review_title: 'Ad nisi duis officia sunt laborum Lorem ad mollit et proident.',
                 reviewer: user.username,
                 friendliness_dogs: 3,
                 friendliness_people: 3,
@@ -411,6 +412,7 @@ const seedTablesForHowlsSearch = (db) => {
         INSERT INTO dog_date_reviews (
             date_created,
             dog_id,
+            review_title,
             reviewer,
             friendliness_dogs,
             friendliness_people,
@@ -429,12 +431,12 @@ const seedTablesForHowlsSearch = (db) => {
             end_time,
             personal_message
         ) VALUES
-            ('2020-07-31T19:35:31.457Z', 3, 'pjfry2000', '4', '4', '3', '2', '4', '3', 'Lake Lookout', 'Springfield', 'MA', '01109', '42.114719256689966', '-72.5379143322001', '2020-08-15', '17:00', '19:00', 'Santos is a good, friendly dog.  The lake area was very busy, and it was difficult for the dogs to run around, since there were so many people around.  That being said, I highly recommend Santos!'),
-            ('2020-07-31T19:35:31.457Z', 1, 'bart_man', '5', '5', '2', '3', '3', '5', 'Lake Lookout', 'Springfield', 'MA', '01109', '42.114719256689966', '-72.5379143322001', '2020-08-15', '17:00', '19:00', 'Seymour is great! He’s on the older-side, but he still has some energy and he’s very good with all dogs and people!'),
-            ('2020-07-31T19:35:31.457Z', 2, 'bart_man', '3', '3', '5', '2', '5', '5', 'Lake Lookout', 'Springfield', 'MA', '01109', '42.114719256689966', '-72.5379143322001', '2020-08-15', '17:00', '19:00', 'Nibbler is a young dog and he still has some work to do on his training.  That said, he’s a sweetie, and I think that he’ll grow into a great dog with more playing time.'),
-            ('2020-07-31T19:35:31.457Z', 4, 'pjfry2000', '3', '5', '2', '5', '5', '5', 'Lake Lookout', 'Springfield', 'MA', '01109', '42.114719256689966', '-72.5379143322001', '2020-08-15', '17:00', '19:00', 'Laddie isn’t super interested in other dogs, but he loves people and he is one of the most obedient dogs that I’ve ever met.  Definitely recommend that you get to know him; he’ll be a great influence on your dog!'),
-            ('2020-07-31T19:35:31.457Z', 5, 'pjfry2000', '2', '4', '1', '2', '4', '3', 'Central Park', 'New York', 'NY', '10024', '40.7812', '-73.9665', '2020-08-15', '17:00', '19:00', 'Abner is very sweet, but is a bit afraid of other dogs.  He’s got a long way to go, but his owner is working hard on his rehabilitation.  If your dog is patient with other dogs, you should look up Abner!');
-
+            ('2020-07-31T19:35:31.457Z', 3, 'Love Santos!', 'pjfry2000', '4', '4', '3', '2', '4', '3', 'Lake Lookout', 'Springfield', 'MA', '01109', '42.114719256689966', '-72.5379143322001', '2020-08-15', '17:00', '19:00', 'Santos is a good, friendly dog.  The lake area was very busy, and it was difficult for the dogs to run around, since there were so many people around.  That being said, I highly recommend Santos!'),
+            ('2020-07-31T19:35:31.457Z', 1, 'I wanna see more Seymour!', 'bart_man', '5', '5', '2', '3', '3', '5', 'Lake Lookout', 'Springfield', 'MA', '01109', '42.114719256689966', '-72.5379143322001', '2020-08-15', '17:00', '19:00', 'Seymour is great! He’s on the older-side, but he still has some energy and he’s very good with all dogs and people!'),
+            ('2020-07-31T19:35:31.457Z', 2, 'Nibbler will nibble on your heart...in a good way!', 'bart_man', '3', '3', '5', '2', '5', '5', 'Lake Lookout', 'Springfield', 'MA', '01109', '42.114719256689966', '-72.5379143322001', '2020-08-15', '17:00', '19:00', 'Nibbler is a young dog and he still has some work to do on his training.  That said, he’s a sweetie, and I think that he’ll grow into a great dog with more playing time.'),
+            ('2020-07-31T19:35:31.457Z', 4, 'What a good lad.', 'pjfry2000', '3', '5', '2', '5', '5', '5', 'Lake Lookout', 'Springfield', 'MA', '01109', '42.114719256689966', '-72.5379143322001', '2020-08-15', '17:00', '19:00', 'Laddie isn’t super interested in other dogs, but he loves people and he is one of the most obedient dogs that I’ve ever met.  Definitely recommend that you get to know him; he’ll be a great influence on your dog!'),
+            ('2020-07-31T19:35:31.457Z', 5, 'Yay, Abner!', 'pjfry2000', '2', '4', '1', '2', '4', '3', 'Central Park', 'New York', 'NY', '10024', '40.7812', '-73.9665', '2020-08-15', '17:00', '19:00', 'Abner is very sweet, but is a bit afraid of other dogs.  He’s got a long way to go, but his owner is working hard on his rehabilitation.  If your dog is patient with other dogs, you should look up Abner!');
+        
         INSERT INTO dog_date_review_comments (
             review_id,
             commenter,
@@ -921,6 +923,7 @@ const makeExpectedReview = (review, dogs, testComments) => {
     const {
         id,
         date_created,
+        review_title,
         reviewer,
         friendliness_dogs,
         friendliness_people,
@@ -951,6 +954,7 @@ const makeExpectedReview = (review, dogs, testComments) => {
     return {
         id,
         date_created,
+        review_title,
         reviewer,
         friendliness_dogs,
         friendliness_people,
@@ -1087,6 +1091,7 @@ const makeMaliciousReview = (user) => {
         id: 911,
         date_created: '2020-07-31T19:35:31.457Z',
         dog_id: 911,
+        review_title: 'Naughty naughty very naughty <script>alert("xss");</script>',
         reviewer: user.username,
         friendliness_dogs: 3,
         friendliness_people: 3,
@@ -1132,6 +1137,7 @@ const makeSanitizedReview = (user) => {
     return {
         id: 911,
         date_created: '2020-07-31T19:35:31.457Z',
+        review_title: saniText,
         reviewer: user.username,
         friendliness_dogs: 3,
         friendliness_people: 3,
