@@ -317,6 +317,7 @@ const HowlsService = {
             }
             if (rating_filter) {
                 const arrayOfPassingDogIds = filteredHowls
+                    .filter(howl => howl.dogs && howl.dogs.length !== 0)
                     .map(howl => howl.dogs.map(dog => dog.dog_id))
                     .flat()
                     .map(dog_id => 
@@ -326,15 +327,17 @@ const HowlsService = {
                         this.calculateAverageWithArrayOfReviews(arrayOfReviews) >= parseInt(rating_filter)
                     )
                     .map(arrayOfReviews => arrayOfReviews[0].dog_id);
-                filteredHowls = filteredHowls.filter(howl => {
-                    let includeHowl = false;
-                    arrayOfPassingDogIds.forEach(passing_id => {
-                        if (howl.dogs.find(dog => dog.dog_id === passing_id)) {
-                            includeHowl = true;
-                        }
-                    });
-                    return includeHowl;
-                });
+                filteredHowls = filteredHowls
+                        .filter(howl => howl.dogs)
+                        .filter(howl => {
+                            let includeHowl = false;
+                            arrayOfPassingDogIds.forEach(passing_id => {
+                                if (howl.dogs.find(dog => dog.dog_id === passing_id)) {
+                                    includeHowl = true;
+                                }
+                            });
+                            return includeHowl;
+                        });
             } 
             if (type_of_meeting) {
                 filteredHowls = filteredHowls.filter(howl => howl.meeting_type === type_of_meeting);
@@ -499,7 +502,7 @@ const HowlsService = {
             date: xss(date),
             meeting_type: xss(meeting_type),
             personal_message: xss(personal_message),
-            dogs: dogs.map(dog => {
+            dogs: !dogs ? [] : dogs.map(dog => {
                 return {
                     dog_id: dog.dog_id,
                     profile: {
