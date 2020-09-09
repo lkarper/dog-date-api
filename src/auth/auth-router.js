@@ -52,10 +52,21 @@ authRouter
 
 authRouter
     .post('/refresh', requireAuth, (req, res) => {
-        const sub = req.user.username;
-        const payload = { user_id: req.user.id };
+        const {
+            id,
+            username,
+            email,
+            phone,
+        } = req.user;
+
+        const sub = username;
+        const payload = { user_id: id };
         res.send({
-            authToken: AuthService.createJWT(sub, payload)
+            authToken: AuthService.createJWT(sub, payload),
+            id,
+            username,
+            email,
+            phone,
         });
     });
 
