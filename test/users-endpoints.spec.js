@@ -185,7 +185,7 @@ describe('Users Endpoints', () => {
         });
     });
 
-    describe.only(`PATCH /api/users`, () => {
+    describe(`PATCH /api/users`, () => {
         beforeEach(`Seed users`, () => 
             helpers.seedUsers(
                 db,
