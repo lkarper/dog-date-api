@@ -219,13 +219,13 @@ describe('Users Endpoints', () => {
                 });
             });
 
-            context(`Given that there is an update body`, () => {
+            context(`Given that there is an update body with an unchanged email`, () => {
                 it(`responds with 204 and updates the user`, () => {
                     return supertest(app)
                         .patch('/api/users')
                         .set('Authorization', helpers.makeAuthHeader(testUser))
                         .send({
-                            email: 'test@test.test',
+                            email: testUser.email,
                             phone: '987-654-3210',
                         })
                         .expect(204)
@@ -250,10 +250,65 @@ describe('Users Endpoints', () => {
                                     authToken: expectedToken,
                                     id: testUser.id,
                                     username: testUser.username,
-                                    email: 'test@test.test',
+                                    email: testUser.email,
                                     phone: '987-654-3210',
                                 });
                         });
+                });
+            });
+
+            context(`Given that there is an update body with a new email`, () => {
+                
+                context(`Given that the email is in use by another member`, () => {
+                    it(`responds 400 'Account already registered with that email' when email isn't unique`, () => {
+                        const duplicateEmail = {
+                            email: testUsers[1].email,
+                            phone: '',
+                        };
+                        return supertest(app)
+                            .patch('/api/users')
+                            .set('Authorization', helpers.makeAuthHeader(testUser))
+                            .send(duplicateEmail)
+                            .expect(400, { error: `Account already registered with that email` });
+                    });
+                });
+
+                context(`Given that the new email is unique`, () => {
+                    it(`responds with 204 and updates the user`, () => {
+                        return supertest(app)
+                            .patch('/api/users')
+                            .set('Authorization', helpers.makeAuthHeader(testUser))
+                            .send({
+                                email: 'test@test.test',
+                                phone: '987-654-3210',
+                            })
+                            .expect(204)
+                            .then(res => {
+                                const userValidCreds = {
+                                    username: testUser.username,
+                                    password: testUser.password,
+                                };
+                                const expectedToken = jwt.sign(
+                                    { user_id: testUser.id },
+                                    process.env.JWT_SECRET,
+                                    {
+                                        subject: testUser.username,
+                                        expiresIn: process.env.JWT_EXPIRY,
+                                        algorithm: 'HS256',
+                                    }
+                                );
+                                return supertest(app)
+                                    .post(`/api/auth/login`)
+                                    .send(userValidCreds)
+                                    .expect(200, {
+                                        authToken: expectedToken,
+                                        id: testUser.id,
+                                        username: testUser.username,
+                                        email: 'test@test.test',
+                                        phone: '987-654-3210',
+                                    });
+                            });
+                    });
                 });
             });
         });

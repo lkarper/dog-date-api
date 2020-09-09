@@ -93,15 +93,36 @@ usersRouter
             });
         }
 
-        UsersService.updateUser(
-            req.app.get('db'),
-            req.user.id,
-            userToUpdate
-        )
-            .then(numRowsAffected => {
-                res.status(204).end();
-            })
-            .catch(next);
+        if (email && email !== req.user.email) {
+            UsersService.hasUserWithEmail(
+                req.app.get('db'),
+                email
+            )
+                .then(emailAlreadyExists => {
+                    if (emailAlreadyExists) {
+                        return res.status(400).json({ error: `Account already registered with that email` });
+                    } else { 
+                        return UsersService.updateUser(
+                            req.app.get('db'),
+                            req.user.id,
+                            userToUpdate
+                        )
+                            .then(numRowsAffected => {
+                                res.status(204).end();
+                            })
+                    }
+                })
+        } else {
+            UsersService.updateUser(
+                req.app.get('db'),
+                req.user.id,
+                userToUpdate
+            )
+                .then(numRowsAffected => {
+                    res.status(204).end();
+                })
+                .catch(next);
+        }
     });
 
 module.exports = usersRouter;
