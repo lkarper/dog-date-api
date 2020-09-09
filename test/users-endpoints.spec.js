@@ -1,9 +1,8 @@
 const knex = require('knex');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const app = require('../src/app');
 const helpers = require('./test-helpers');
-const supertest = require('supertest');
-const { expect } = require('chai');
 
 describe('Users Endpoints', () => {
     let db;
@@ -182,6 +181,80 @@ describe('Users Endpoints', () => {
                                 expect(compareMatch).to.be.true;
                             })
                     );
+            });
+        });
+    });
+
+    describe.only(`PATCH /api/users`, () => {
+        beforeEach(`Seed users`, () => 
+            helpers.seedUsers(
+                db,
+                testUsers
+            )
+        );
+
+        context(`Given that there is no authorization header`, () => {
+            it(`responds with 401 and an error message`, () => {
+                return supertest(app)
+                    .patch(`/api/users`)
+                    .send({
+                        email: 'test@test.test',
+                    })
+                    .expect(401, { error: `Missing bearer token` });
+            });
+        });
+
+        context(`Given that there is an authorization header`, () => {
+            context(`Given that there is no update body`, () => {
+                it(`responds with 400 and an error message`, () => {
+                    return supertest(app)
+                        .patch(`/api/users`)
+                        .set('Authorization', helpers.makeAuthHeader(testUser))
+                        .send({})
+                        .expect(400, {
+                            error: {
+                                message: `Request body must contain one of 'email' or 'phone'.`,
+                            }
+                        });
+                });
+            });
+
+            context(`Given that there is an update body`, () => {
+                it(`responds with 204 and updates the user`, () => {
+                    return supertest(app)
+                        .patch('/api/users')
+                        .set('Authorization', helpers.makeAuthHeader(testUser))
+                        .send({
+                            email: 'test@test.test',
+                            phone: '987-654-3210',
+                        })
+                        .expect(204)
+                        .then(res => {
+                            const userValidCreds = {
+                                username: testUser.username,
+                                password: testUser.password,
+                            };
+                            const expectedToken = jwt.sign(
+                                { user_id: testUser.id },
+                                process.env.JWT_SECRET,
+                                {
+                                    subject: testUser.username,
+                                    expiresIn: process.env.JWT_EXPIRY,
+                                    algorithm: 'HS256',
+                                }
+                            );
+                            return supertest(app)
+                                .post(`/api/auth/login`)
+                                .send(userValidCreds)
+                                .expect(200, {
+                                    authToken: expectedToken,
+                                    id: testUser.id,
+                                    username: testUser.username,
+                                    email: 'test@test.test',
+                                    phone: '987-654-3210',
+                                });
+                        });
+                });
             });
         });
     });

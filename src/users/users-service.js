@@ -49,6 +49,11 @@ const UsersService = {
     hashPassword(password) {
         return bcrypt.hash(password, 12);
     },
+    updateUser(db, id, newUserFields) {
+        return db('dog_date_users')
+            .where({ id })
+            .update(newUserFields);
+    },
 };
 
 module.exports = UsersService;

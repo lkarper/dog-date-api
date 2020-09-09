@@ -1,13 +1,21 @@
 const express = require('express');
 const path = require('path');
+const { requireAuth } = require('../middleware/jwt-auth');
 const UsersService = require('./users-service');
 
 const usersRouter = express.Router();
 const jsonParser = express.json();
 
 usersRouter
-    .post('/', jsonParser, (req, res, next) => {
-        const { password, username, email, phone } = req.body;
+    .route('/')
+    .post(jsonParser, (req, res, next) => {
+        const { 
+            password, 
+            username, 
+            email, 
+            phone 
+        } = req.body;
+
         for (const field of ['password', 'username', 'email']) {
             if (!req.body[field]) {
                 return res.status(400).json({
@@ -62,6 +70,36 @@ usersRouter
                                     });
                         });
                 }
+            })
+            .catch(next);
+    })
+    .patch(requireAuth, jsonParser, (req, res, next) => {
+        const {
+            email,
+            phone
+        } = req.body;
+
+        const userToUpdate = {
+            email,
+            phone
+        };
+
+        const numberOfValues = Object.values(userToUpdate).filter(Boolean).length;
+        if (numberOfValues === 0) {
+            return res.status(400).json({
+                error: {
+                    message: `Request body must contain one of 'email' or 'phone'.`,
+                }
+            });
+        }
+
+        UsersService.updateUser(
+            req.app.get('db'),
+            req.user.id,
+            userToUpdate
+        )
+            .then(numRowsAffected => {
+                res.status(204).end();
             })
             .catch(next);
     });
