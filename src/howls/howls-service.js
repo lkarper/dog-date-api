@@ -18,6 +18,13 @@ const HowlsService = {
                 'ddh.meeting_type',
                 'ddh.personal_message',
                 db.raw(
+                    `json_build_object(
+                            'username', usr.username,
+                            'email', usr.email,
+                            'phone', usr.phone
+                        ) AS "user_info"`
+                ),
+                db.raw(
                     `(
                         select array_to_json(
                             array_agg(row_to_json(h))
@@ -486,6 +493,7 @@ const HowlsService = {
         const {
             id,
             user_id,
+            user_info,
             howl_title,
             date,
             meeting_type,
@@ -498,6 +506,11 @@ const HowlsService = {
         return {
             id,
             user_id,
+            user_info: {
+                username: xss(user_info.username),
+                email: xss(user_info.email),
+                phone: xss(user_info.phone), 
+            },
             howl_title: xss(howl_title),
             date: xss(date),
             meeting_type: xss(meeting_type),
