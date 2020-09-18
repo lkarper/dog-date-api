@@ -471,6 +471,11 @@ const makeDataArrayForTestingSearch = () => {
         {
             "id": 1,
             "user_id": 1,
+            "user_info": {
+                "username": "pjfry2000",
+                "email": "sample@fake-email.com",
+                "phone": "123-456-7890"
+            },
             "howl_title": "Looking for some energetic pups near Central Park!",
             "date": "",
             "meeting_type": "recurring",
@@ -567,6 +572,11 @@ const makeDataArrayForTestingSearch = () => {
         {
             "id": 2,
             "user_id": 1,
+            "user_info": {
+                "username": "pjfry2000",
+                "email": "sample@fake-email.com",
+                "phone": "123-456-7890"
+            },
             "howl_title": "Heading to Acadia for the day; who wants to join me?",
             "date": "2020-08-30",
             "meeting_type": "once",
@@ -625,6 +635,11 @@ const makeDataArrayForTestingSearch = () => {
         {
             "id": 3,
             "user_id": 2,
+            "user_info": {
+                "username": "bart_man",
+                "email": "sample2@fake-email.com",
+                "phone": ""
+            },
             "howl_title": "Dogs love to play by the lake: join Santos!",
             "date": "2020-08-15",
             "meeting_type": "once",
@@ -688,6 +703,11 @@ const makeDataArrayForTestingSearch = () => {
         {
             "id": 4,
             "user_id": 2,
+            "user_info": {
+                "username": "bart_man",
+                "email": "sample2@fake-email.com",
+                "phone": ""
+            },
             "howl_title": "Shout if you’ll be at the farmer’s market!",
             "date": "",
             "meeting_type": "recurring",
@@ -890,6 +910,11 @@ const makeExpectedHowl = (users, dogs, howl, timeWindows, dogsInHowls) => {
     return {
         id: howl.id,
         user_id: howl.id,
+        user_info: {
+            username: owner.username,
+            email: owner.email,
+            phone: owner.phone,
+        },
         howl_title: `Test howl ${howl.id}`,
         date: howl.id % 2 === 0 ? '' : `2020-08-${howl.id + 10}`,
         meeting_type: howl.id % 2 === 0 ? 'recurring' : 'once',
@@ -1053,6 +1078,11 @@ const makeMaliciousHowl = (user, expectedProfile) => {
     const expectedHowl = {
         id: 911,
         user_id: 2,
+        user_info: {
+            username: saniText,
+            email: saniText,
+            phone: saniText,
+        },
         howl_title: saniText,
         date: saniText,
         meeting_type: 'once',
