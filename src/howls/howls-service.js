@@ -19,10 +19,10 @@ const HowlsService = {
                 'ddh.personal_message',
                 db.raw(
                     `json_build_object(
-                            'username', usr.username,
-                            'email', usr.email,
-                            'phone', usr.phone
-                        ) AS "user_info"`
+                        'username', usr.username,
+                        'email', usr.email,
+                        'phone', usr.phone
+                    ) AS "user_info"`
                 ),
                 db.raw(
                     `(
@@ -61,13 +61,13 @@ const HowlsService = {
                                     'aggressive', dp.aggressive,
                                     'owner_description', dp.owner_description
                                 ) AS "profile"
-                                from dog_date_dog_profiles as dp
+                                from dog_date_dog_profiles AS dp
                                 where dp.id=dih.dog_id
                             )
                             from dog_date_dogs_in_howls AS dih
                             where dih.howl_id=ddh.id
                         ) h
-                    ) as dogs`
+                    ) AS dogs`
                 ),
                 db.raw(
                     `json_strip_nulls(
@@ -90,7 +90,7 @@ const HowlsService = {
                             from dog_date_time_windows AS tw
                             where tw.howl_id=ddh.id
                         ) h
-                    ) as time_windows`
+                    ) AS time_windows`
                 )
             )
             .leftJoin('dog_date_users AS usr', 'ddh.user_id', 'usr.id');
@@ -114,7 +114,7 @@ const HowlsService = {
             personal_message,
             dog_ids,
             time_windows,
-            user_id
+            user_id,
         } = newHowl;
 
         const baseHowl = {
@@ -128,37 +128,44 @@ const HowlsService = {
             date,
             meeting_type,
             personal_message,
-            user_id
+            user_id,
         };
 
+        /* 
+            Save the howl id for use in each step of the transaction below 
+            and to return howl data after the transaction
+        */
         let howlId;
 
+        // The complete data for a howl is saved over multiple tables, so a transaction is used to ensure integrity of data
         return db.transaction(function(trx) {
             return trx
                 .insert(baseHowl, 'id')
                 .into('dog_date_howls')
                 .then(ids => {
                     howlId = ids[0];
-                    const dogs = dog_ids.map((dog_id) => {
+                    const dogs = dog_ids
+                        .map(dog_id => {
                             return {
-                                howl_id: ids[0],
+                                howl_id: howlId,
                                 dog_id,
                             };
-                    });
+                        });
                     return trx('dog_date_dogs_in_howls').insert(dogs);
                 })
                 .then(() => {
-                    const windows = time_windows.map(window => {
-                        return {
-                            howl_id: howlId,
-                            ...window,
-                        };
-                    });
+                    const windows = time_windows
+                        .map(window => {
+                            return {
+                                howl_id: howlId,
+                                ...window,
+                            };
+                        });
                     return trx('dog_date_time_windows').insert(windows);
                 });
         })
-        .then(inserts => this.getById(db, howlId))
-        .catch(error => console.error(error))
+            .then(inserts => this.getById(db, howlId))
+            .catch(error => console.error(error));
     },
     deleteHowl(db, id) {
         return db('dog_date_howls')
@@ -179,7 +186,7 @@ const HowlsService = {
             personal_message,
             dog_ids,
             time_windows,
-            user_id
+            user_id,
         } = newHowlFields;
 
         const baseHowl = {
@@ -193,42 +200,54 @@ const HowlsService = {
             date,
             meeting_type,
             personal_message,
-            user_id
+            user_id,
         };
 
+        // The complete data for a howl is saved over multiple tables, so a transaction is used to ensure integrity of data
         return db.transaction(function(trx) {
             return trx('dog_date_howls')
                 .where({ id })
                 .update(baseHowl)
                 .then(() => {
+                    /*
+                        Only update dog_date_dogs_in_howls if necessary;
+                        First deletes all of the old entries; this prevents accidental duplication of data
+                    */
                     if (dog_ids) {
                         return trx('dog_date_dogs_in_howls')
                             .where('howl_id', id)
                             .delete();
                     }
-                    return
+                    return;
                 })
                 .then(() => {
+                    // Adds dogs back into dog_date_dogs_in_howls, if they were deleted in the last step
                     if (dog_ids) {
-                        const dogs = dog_ids.map((dog_id) => {
-                            return {
-                                howl_id: id,
-                                dog_id,
-                            };
-                        });
+                        const dogs = dog_ids
+                            .map(dog_id => {
+                                return {
+                                    howl_id: id,
+                                    dog_id,
+                                };
+                            });
                         return trx('dog_date_dogs_in_howls').insert(dogs);
                     }
-                    return
+                    return;
                 })
                 .then(() => {
+                     /*
+                        Only update dog_date_time_windows if necessary;
+                        First deletes all of the old entries; this prevents accidental duplication of data
+                    */
                     if (time_windows) {
                         return trx('dog_date_time_windows')
                             .where('howl_id', id)
                             .delete();
                     }
-                    return
+                    return;
                 })
                 .then(() => {
+                    // Adds time windows back into dog_date_time_windows, if they were deleted in the last step
                     if (time_windows) {
                         const windows = time_windows.map(window => {
                             return {
@@ -241,7 +260,7 @@ const HowlsService = {
                     return;
                 });
         })
-        .catch(error => console.error(error));
+            .catch(error => console.error(error));
     },
     getUserSavedHowls(db, user_id) {
         return db('dog_date_user_saved_howls')
@@ -272,6 +291,7 @@ const HowlsService = {
             .delete();
     },
     filterHowls(reviews, howls, params) {
+        // Filters howls by query params
         return new Promise((res, rej) => {
             let filteredHowls = [...howls];
             const {
@@ -282,10 +302,12 @@ const HowlsService = {
                 days_of_week = '',
                 recurring_meeting_windows = '',
                 date,
-                time_windows = ''
+                time_windows = '',
             } = params;
 
             const daysOfWeek = days_of_week ? days_of_week.split('|') : [];
+
+            // recurringMeetingWindows stores time windows for a meeting on a day of the week (e.g. Fridays)
             const recurringMeetingWindows = recurring_meeting_windows 
                 ?
                     recurring_meeting_windows
@@ -297,11 +319,13 @@ const HowlsService = {
                                     dayOfWeek: windowArray[1],
                                     startTime: windowArray[2],
                                     endTime: windowArray[3]
-                                }
-                            }
+                                },
+                            };
                         }) 
                 : 
                     [];
+
+            // timeWindows stores time windows for a meeting on a specific date (e.g. June 30, 2020)
             const timeWindows = time_windows 
                 ? 
                     time_windows
@@ -319,36 +343,42 @@ const HowlsService = {
             if (state) {
                 filteredHowls = filteredHowls.filter(howl => howl.location.state === state);
             }
+
             if (zipcode) {
                 filteredHowls = filteredHowls.filter(howl => howl.location.zipcode === zipcode);
             }
+
             if (rating_filter) {
+                // First, find all of the ids of dogs that have an average rating equal to or greater than the query param
                 const arrayOfPassingDogIds = filteredHowls
                     .filter(howl => howl.dogs && howl.dogs.length !== 0)
                     .map(howl => howl.dogs.map(dog => dog.dog_id))
                     .flat()
-                    .map(dog_id => 
-                        reviews.filter(review => review.dog_id === dog_id)
-                    )
+                    .map(dog_id => reviews.filter(review => review.dog_id === dog_id))
                     .filter(arrayOfReviews => 
                         this.calculateAverageWithArrayOfReviews(arrayOfReviews) >= parseInt(rating_filter)
                     )
                     .map(arrayOfReviews => arrayOfReviews[0].dog_id);
+
+                // Next, filter the howls by those dog ids that meet the requirement
                 filteredHowls = filteredHowls
-                        .filter(howl => howl.dogs)
-                        .filter(howl => {
-                            let includeHowl = false;
-                            arrayOfPassingDogIds.forEach(passing_id => {
-                                if (howl.dogs.find(dog => dog.dog_id === passing_id)) {
-                                    includeHowl = true;
-                                }
-                            });
-                            return includeHowl;
+                    .filter(howl => howl.dogs)
+                    .filter(howl => {
+                        let includeHowl = false;
+                        arrayOfPassingDogIds.forEach(passing_id => {
+                            if (howl.dogs.find(dog => dog.dog_id === passing_id)) {
+                                includeHowl = true;
+                            }
                         });
+                        return includeHowl;
+                    });
             } 
+
             if (type_of_meeting) {
                 filteredHowls = filteredHowls.filter(howl => howl.meeting_type === type_of_meeting);
             }
+
+            // Filters howls by day of the week (e.g. Fridays, Saturdays)    
             if (daysOfWeek.length !==0) {
                 filteredHowls = filteredHowls.filter(howl => {
                     if (howl.meeting_type === 'recurring') {
@@ -360,26 +390,62 @@ const HowlsService = {
                         });
                         return includeHowl;
                     } else {
-                        return daysOfWeek.includes(moment(howl.date).format("dddd"));
+                        /* 
+                            If a howl is a one time howl that falls on a calendar date (e.g. June 30), 
+                            find out which day of the week that date falls on (e.g. Tuesday) 
+                            and use that to determine if the howl passes the filter
+                        */
+                        return daysOfWeek.includes(
+                            moment(howl.date)
+                                .format("dddd")
+                        );
                     }
                 });
             }
+
+            // Filters howls by time windows on days of the week (e.g. Fridays, 8:00 - 14:00)
             if (daysOfWeek.length !== 0 && recurringMeetingWindows.length !== 0) {
                 filteredHowls = filteredHowls.filter(howl => {
                     if (howl.meeting_type === 'once') {
+                        /* 
+                            If a howl is a one time howl that falls on a calendar date (e.g. June 30), 
+                            find out which day of the week that date falls on (e.g. Tuesday) 
+                            and use that to determine if the howl passes the filter
+                        */
                         let includeHowl = false;
                         const day = moment(howl.date).format("dddd");
+                        
+                        /* 
+                            If the howl occurs on the requested day of the week, 
+                            determine if it falls within the queried time windows 
+                            for that day (if there are any)
+                        */
                         if (daysOfWeek.includes(day)) {
+                            /*
+                                First, determine if the day of the week includes time windows.
+                                (E.g. A query may seek all howls on Fridays (regardless of time), 
+                                but only howls that fall within the window 8:00 - 12:00 on Saturdays.
+                                In this case, there is no need to check if a howl that occurs on a 
+                                Friday falls within a certain period of time.)
+                            */
                             if (!recurringMeetingWindows.find(win => win[Object.keys(win)[0]].dayOfWeek === day)) {
                                 includeHowl = true;
                             }
+
+                            /* 
+                                Next, if a day of the week does include time windows, determine whether
+                                the howl falls within any of the queried time windows for that day.
+                                Code below loops through the queried time windows and the time windows
+                                for each howl and determines if they overlap
+                            */
                             howl.time_windows.forEach(window => {
                                 recurringMeetingWindows.forEach(win => {
-                                    const windowP = win[Object.keys(win)[0]];
-                                    if (windowP.dayOfWeek === day) {
-                                        if ((window.end_time > windowP.startTime && window.start_time <= windowP.startTime) || 
-                                            (window.start_time < windowP.endTime && window.end_time >= windowP.endTime) ||
-                                            (window.start_time >= windowP.startTime && window.end_time <= windowP.endTime)) {
+                                    // windowQ stands for the queried window
+                                    const windowQ = win[Object.keys(win)[0]];
+                                    if (windowQ.dayOfWeek === day) {
+                                        if ((window.end_time > windowQ.startTime && window.start_time <= windowQ.startTime) || 
+                                            (window.start_time < windowQ.endTime && window.end_time >= windowQ.endTime) ||
+                                            (window.start_time >= windowQ.startTime && window.end_time <= windowQ.endTime)) {
                                                 includeHowl = true;
                                         }
                                     }
@@ -388,27 +454,47 @@ const HowlsService = {
                         }
                         return includeHowl;
                     } else {
+                        // If a howl is a recurring howl
                         let includeHowl = false;
                         howl.time_windows.forEach(window => {
+                            // First determine if the howl falls on any days of the week that were queried
                             if (daysOfWeek.includes(window.day_of_week)) {
                                 let found = false;
+                                /* 
+                                    Next, determine if the day of the week includes time windows.
+                                    (E.g. A query may seek all howls on Fridays (regardless of time), 
+                                    but only howls that fall in the window 8:00 - 12:00 on Saturdays.
+                                    In this case, there is no need to check if a howl that occurs on a 
+                                    Friday falls within a certain period of time.)
+                                */
                                 recurringMeetingWindows.forEach(win => {
                                     if (win[Object.keys(win)[0]].dayOfWeek === window.day_of_week) {
                                         found = true;
                                     }
                                 });
+                                /* 
+                                    If a day of the week does include time windows, determine whether
+                                    the howl falls within any of the queried time windows for that day.
+                                    Code below loops through the queried time windows and the time windows
+                                    for each howl and determines if they overlap
+                                */
                                 if (found) {
                                     recurringMeetingWindows.forEach(win => {
-                                        const windowP = win[Object.keys(win)[0]];
-                                        if (windowP.dayOfWeek === window.day_of_week) {
-                                            if ((window.end_time > windowP.startTime && window.start_time <= windowP.startTime) || 
-                                                (window.start_time < windowP.endTime && window.end_time >= windowP.endTime) ||
-                                                (window.start_time >= windowP.startTime && window.end_time <= windowP.endTime)) {
+                                        // windowQ stands for the queried window
+                                        const windowQ = win[Object.keys(win)[0]];
+                                        if (windowQ.dayOfWeek === window.day_of_week) {
+                                            if ((window.end_time > windowQ.startTime && window.start_time <= windowQ.startTime) || 
+                                                (window.start_time < windowQ.endTime && window.end_time >= windowQ.endTime) ||
+                                                (window.start_time >= windowQ.startTime && window.end_time <= windowQ.endTime)) {
                                                     includeHowl = true;
                                             }
                                         }
                                     });    
                                 } else {
+                                    /* 
+                                        If a queried day of the week does not include time windows,
+                                        and the howl falls on the day (regardless of time), include it
+                                    */
                                     includeHowl = true;
                                 }
                             }
@@ -417,11 +503,17 @@ const HowlsService = {
                     }
                 });
             }
+
+            // Filters howls by calendar date (e.g. June 30)
             if (date) {
                 filteredHowls = filteredHowls.filter(howl => {
                     if (howl.meeting_type === 'once') {
                         return howl.date === date;
                     } else {
+                        /* 
+                            If howl is recurring, determine the day of the week on which the queried date falls,
+                            then determine if the howl falls on that day of the week
+                        */
                         let includeHowl = false;
                         howl.time_windows.forEach(window => {
                             if (moment(date).format("dddd") === window.day_of_week) {
@@ -432,16 +524,24 @@ const HowlsService = {
                     }
                 });
             }
+
+            // Filters howls by time windows on a specific date (e.g. June 30, 10:00 - 12:00)
             if (date && timeWindows.length !== 0) {
                 filteredHowls = filteredHowls.filter(howl => {
                     if (howl.meeting_type === 'once') {
+                        // If the howl is a one time howl, determine if the howl falls within the queried windows
                         let includeHowl = false;
                         if (howl.date === date) {
+                            /* 
+                                If the howl falls on the date, loop through the queried time windows 
+                                and the time windows for each howl and determines if they overlap
+                            */
                             howl.time_windows.forEach(window => {
-                                timeWindows.forEach(windowP => {
-                                    if ((window.end_time > windowP.startTime && window.start_time <= windowP.startTime) || 
-                                        (window.start_time < windowP.endTime && window.end_time >= windowP.endTime) ||
-                                        (window.start_time >= windowP.startTime && window.end_time <= windowP.endTime)) {
+                                timeWindows.forEach(windowQ => {
+                                    // windowQ stands for queried window
+                                    if ((window.end_time > windowQ.startTime && window.start_time <= windowQ.startTime) || 
+                                        (window.start_time < windowQ.endTime && window.end_time >= windowQ.endTime) ||
+                                        (window.start_time >= windowQ.startTime && window.end_time <= windowQ.endTime)) {
                                             includeHowl = true;
                                         }
                                 });    
@@ -449,13 +549,21 @@ const HowlsService = {
                         }
                         return includeHowl;
                     } else {
+                        /* 
+                            If the howl is a recurring howl, determine what day of the week the date falls on 
+                            and determine if the howl falls on that day of the week 
+                        */
                         let includeHowl = false;
                         howl.time_windows.forEach(window => {
                             if (moment(date).format("dddd") === window.day_of_week) {
-                                timeWindows.forEach(windowP => {
-                                    if ((window.end_time > windowP.startTime && window.start_time <= windowP.startTime) || 
-                                        (window.start_time < windowP.endTime && window.end_time >= windowP.endTime) ||
-                                        (window.start_time >= windowP.startTime && window.end_time <= windowP.endTime)) {
+                                 /* 
+                                    If the howl falls on the date, loop through the queried time windows 
+                                    and the time windows for each howl and determines if they overlap
+                                */
+                                timeWindows.forEach(windowQ => {
+                                    if ((window.end_time > windowQ.startTime && window.start_time <= windowQ.startTime) || 
+                                        (window.start_time < windowQ.endTime && window.end_time >= windowQ.endTime) ||
+                                        (window.start_time >= windowQ.startTime && window.end_time <= windowQ.endTime)) {
                                             includeHowl = true;
                                         }
                                 });    
@@ -469,6 +577,7 @@ const HowlsService = {
         })
     },
     calculateAverageWithArrayOfReviews(reviews) {
+        // Calculates a dog's average rating based on reviews
         return reviews.reduce((acc, curr) => {
             const { 
                 friendliness_dogs,
@@ -478,14 +587,16 @@ const HowlsService = {
                 profile_accuracy,
                 location_suitability,
             } = curr;
+
             const averageRating = (
-                friendliness_dogs +
-                friendliness_people +
-                playing_interest +
-                obedience +
-                profile_accuracy + 
-                location_suitability 
-            ) / 6;
+                    friendliness_dogs +
+                    friendliness_people +
+                    playing_interest +
+                    obedience +
+                    profile_accuracy + 
+                    location_suitability 
+                ) / 6;
+
             return acc + averageRating;
         }, 0) / reviews.length;
     },

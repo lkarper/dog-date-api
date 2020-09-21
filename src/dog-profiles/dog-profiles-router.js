@@ -126,7 +126,7 @@ dogProfilesRouter
         res.json(DogProfilesService.serializeProfile(res.profile))
     })
     .delete((req, res, next) => { 
-        // Verify that the user making the delete request owns the profile to be deleted
+        // Verifies that the user making the delete request owns the profile to be deleted
         if (res.profile.owner.id !== req.user.id) {
             return res.status(401).json({ error: `Unauthorized request` });
         }
@@ -141,7 +141,7 @@ dogProfilesRouter
             .catch(next);
     })
     .patch(jsonBodyParser, (req, res, next) => {
-        // Verify that the user making the patch request owns the profile to be updated
+        // Verifies that the user making the patch request owns the profile to be updated
         if (res.profile.owner.id !== req.user.id) {
             return res.status(401).json({ error: `Unauthorized request` });
         }

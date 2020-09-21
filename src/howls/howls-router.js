@@ -11,6 +11,10 @@ howlsRouter
     .get((req, res, next) => {
         HowlsService.getAllHowls(req.app.get('db'))
             .then(howls => {
+                /* 
+                    Howls can be filtered by the average review score for the dogs in the howls;
+                    to do this, you need the reviews for each dog in the howl
+                */
                 HowlsService.getReviews(req.app.get('db'))
                     .then(reviews => {
                         const params = req.query;
@@ -19,15 +23,14 @@ howlsRouter
                             howls, 
                             params
                         )
-                        .then(howls => {
-                            res.status(200).json(howls.map(HowlsService.serializeHowl));
-                        })
+                            .then(howls => {
+                                res.status(200).json(howls.map(HowlsService.serializeHowl));
+                            });
                     });
             })
             .catch(next);   
     })
     .post(requireAuth, jsonBodyParser, (req, res, next) => {
-
         const {
             howl_title,
             address,
@@ -40,7 +43,7 @@ howlsRouter
             meeting_type,
             personal_message,
             dog_ids,
-            time_windows
+            time_windows,
         } = req.body;
 
         const newHowl = {
@@ -53,7 +56,7 @@ howlsRouter
             meeting_type,
             personal_message,
             dog_ids,
-            time_windows
+            time_windows,
         }
 
         for (const [key, value] of Object.entries(newHowl)) {
@@ -65,6 +68,7 @@ howlsRouter
         }
 
         newHowl.user_id = req.user.id;
+        // lat and lon are optional fields in the request body
         newHowl.lat = lat;
         newHowl.lon = lon;
 
@@ -72,13 +76,12 @@ howlsRouter
             req.app.get('db'),
             newHowl
         )
-        .then(howl => {
-            res.
-                status(201)
-                .location(path.posix.join(req.originalUrl, `/${howl.id}`))
-                .json(HowlsService.serializeHowl(howl));
-        })
-        .catch(next);
+            .then(howl => {
+                res.status(201)
+                    .location(path.posix.join(req.originalUrl, `/${howl.id}`))
+                    .json(HowlsService.serializeHowl(howl));
+            })
+            .catch(next);
     });
 
 howlsRouter
@@ -126,7 +129,7 @@ howlsRouter
                                         howlsToInclude
                                             .find(howl => howl.id === savedHowl.howl_id)
                                     ),
-                                }
+                                };
                             })
                         );
                     })
@@ -139,6 +142,10 @@ howlsRouter
         const { howl_id } = req.body;
         const { savedHowl } = res;
 
+        /* 
+            If a howl is already saved, simply return the howl info;
+            otherwise insert a new saved howl into table
+        */
         if (savedHowl) {
             HowlsService.getById(
                 req.app.get('db'),
@@ -151,7 +158,6 @@ howlsRouter
                 })
                 .catch(next);
         } else {
-
             const newUserSavedHowl = {
                 user_id,
                 howl_id,
@@ -202,6 +208,7 @@ howlsRouter
             .catch(next);
     })
     .delete((req, res, next) => {
+        // Verifies that the user making the delete request owns the saved howl to be deleted
         if (res.saved_entry.user_id !== req.user.id) {
             return res.status(401).json({ error: `Unauthorized request` });
         }
@@ -240,6 +247,7 @@ howlsRouter
         res.json(HowlsService.serializeHowl(res.howl));
     })
     .delete((req, res, next) => {
+        // Verifies that the user making the delete request owns the howl to be deleted
         if (res.howl.user_id !== req.user.id) {
             return res.status(401).json({ error: `Unauthorized request` });
         }
@@ -254,6 +262,7 @@ howlsRouter
             .catch(next);
     })
     .patch(jsonBodyParser, (req, res, next) => {
+        // Verifies that the user making the patch request owns the howl to be patched
         if (res.howl.user_id !== req.user.id) {
             return res.status(401).json({ error: `Unauthorized request` });
         }
@@ -270,7 +279,7 @@ howlsRouter
             meeting_type,
             personal_message,
             dog_ids,
-            time_windows
+            time_windows,
         } = req.body;
 
         const howlToUpdate = {
@@ -285,7 +294,7 @@ howlsRouter
             meeting_type,
             personal_message,
             dog_ids,
-            time_windows
+            time_windows,
         };
 
         const numberOfValues = Object.values(howlToUpdate).filter(Boolean).length;
@@ -296,6 +305,7 @@ howlsRouter
                 },
             });
         }
+
         howlToUpdate.user_id = req.user.id;
 
         HowlsService.updateHowl(
@@ -311,7 +321,6 @@ howlsRouter
 
 async function checkHowlExists(req, res, next) {
     try {
-
         if (!req.params.howl_id && !req.body.howl_id) {
             return res.status(400).json({
                 error: {
@@ -319,6 +328,7 @@ async function checkHowlExists(req, res, next) {
                 },
             });
         }
+
         const howl = await HowlsService.getById(
             req.app.get('db'),
             req.params.howl_id || req.body.howl_id
@@ -337,6 +347,7 @@ async function checkHowlExists(req, res, next) {
     }
 }
 
+// Check to see if an entry in dog_date_user_saved_howls exists (uses id of row)
 async function checkSavedHowlExists(req, res, next) {
     try {
         const savedEntry = await HowlsService.getUserSavedHowlById(
@@ -356,6 +367,7 @@ async function checkSavedHowlExists(req, res, next) {
     }
 }
 
+// Check to see if howl is already saved before attempting to save the howl(by user_id and howl_id)
 async function checkHowlIsSaved(req, res, next) {
     try {
         const savedHowl = await HowlsService.getUserSavedHowlByUserIdAndHowlId(
