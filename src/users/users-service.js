@@ -1,6 +1,13 @@
 const xss = require('xss');
 const bcrypt = require('bcryptjs');
 
+/* 
+    REGEX to test password meets following requirements:
+        1. Contains at least 1 upper case letter
+        2. Contains at least 1 lower case letter
+        3. Contains at least 1 number
+        4. Contains at least 1 special character
+*/
 const REGEX_UPPER_LOWER_NUMBER_SPECIAL = /(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&])[\S]+/
 
 const UsersService = {
@@ -15,7 +22,7 @@ const UsersService = {
             return 'Password must not start or end with empty spaces';
         }
         if (!REGEX_UPPER_LOWER_NUMBER_SPECIAL.test(password)) {
-            return 'Password must contain 1 upper case, lower case, number and special character';
+            return 'Password must contain 1 upper case letter, lower case letter, number and special character';
         }
         return null;
     },
