@@ -16,7 +16,6 @@ reviewsRouter
             .catch(next);
     })
     .post(requireAuth, jsonBodyParser, (req, res, next) => {
-
         const {
           date_created,
           dog_id,
@@ -122,6 +121,7 @@ reviewsRouter
         res.json(ReviewsService.serializeReview(res.review));
     })
     .delete((req, res, next) => {
+        // Verifies that the user attempting to delete the review created it
         if (res.review.reviewer !== req.user.username) {
             return res.status(401).json({ error: `Unauthorized request` });
         }
@@ -136,6 +136,7 @@ reviewsRouter
             .catch(next);
     })
     .patch(jsonBodyParser, (req, res, next) => {
+        // Verifies that the user attempting to patch the review created it
         if (res.review.reviewer !== req.user.username) {
             return res.status(401).json({ error: `Unauthorized request` });
         }
@@ -263,6 +264,7 @@ reviewsRouter
         res.json(ReviewsService.serializeComment(res.comment));
     })
     .delete((req, res, next) => {
+        // Verifies that the user attempting to delete the comment created it
         if (res.comment.commenter !== req.user.username) {
             return res.status(401).json({ error: `Unauthorized request` });
         }
@@ -277,6 +279,7 @@ reviewsRouter
             .catch(next);
     })
     .patch(jsonBodyParser, (req, res, next) => {
+        // Verifies that the user attempting to patch the comment created it
         if (res.comment.commenter !== req.user.username) {
             return res.status(401).json({ error: `Unauthorized request` });
         }
@@ -284,20 +287,20 @@ reviewsRouter
         const {
             date_time,
             comment,
-            edited
+            edited,
         } = req.body;
 
         const commentToUpdate = {
             date_time,
             comment,
-            edited
+            edited,
         };
 
         const numberOfValues = Object.values(commentToUpdate).filter(Boolean).length;
         if (numberOfValues === 0) {
             return res.status(400).json({
                 error: {
-                    message: `Request body must contain one of 'date_time', 'comment', 'edited'.`
+                    message: `Request body must contain one of 'date_time', 'comment', 'edited'.`,
                 },
             });
         }
@@ -323,7 +326,7 @@ async function checkCommentExists(req, res, next) {
 
         if (!comment) {
             return res.status(404).json({
-                error: { message: `Comment doesn't exist` }
+                error: { message: `Comment doesn't exist` },
             });
         }
 

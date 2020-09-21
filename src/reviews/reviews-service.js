@@ -147,7 +147,7 @@ const ReviewsService = {
             commenter: xss(commenter),
             date_time,
             comment: xss(comment.comment),
-            edited
+            edited,
         };
     },
     serializeReview(review) {
@@ -220,20 +220,7 @@ const ReviewsService = {
                 owner_description: xss(dog_profile.owner_description),
                 owner_id: dog_profile.owner_id,
             },
-            comments: comments 
-                ? 
-                    comments.map(comment => {
-                        return {
-                            id: comment.id,
-                            review_id: comment.review_id,
-                            commenter: xss(comment.commenter),
-                            date_time: xss(comment.date_time),
-                            comment: xss(comment.comment),
-                            edited: comment.edited,
-                        };
-                    }) 
-                : 
-                    [],
+            comments: comments ? comments.map(ReviewsService.serializeComment) : [],
         };
     },
 };
