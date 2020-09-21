@@ -74,7 +74,7 @@ describe(`Howls endpoints`, () => {
             const {
                 maliciousHowl,
                 expectedHowl
-            } = helpers.makeMaliciousHowl(testUser, expectedProfile);
+            } = helpers.makeMaliciousHowl(expectedProfile);
 
             beforeEach(`insert malicious data`, () => {
                 const { dog_ids, time_windows, ...rest } = maliciousHowl;
@@ -245,7 +245,6 @@ describe(`Howls endpoints`, () => {
                 });
             });
         });
-
     });
 
     describe(`GET /user-saved`, () => {
@@ -456,7 +455,7 @@ describe(`Howls endpoints`, () => {
                         .set('Authorization', helpers.makeAuthHeader(testUser))
                         .send({
                             user_id: testUser.id,
-                            howl_id: howlForTest.id
+                            howl_id: howlForTest.id,
                         })
                         .expect(200)
                         .expect(res => {
@@ -762,7 +761,7 @@ describe(`Howls endpoints`, () => {
                 const {
                     maliciousHowl,
                     expectedHowl
-                } = helpers.makeMaliciousHowl(testUser, expectedProfile);
+                } = helpers.makeMaliciousHowl(expectedProfile);
     
                 beforeEach(`insert malicious data`, () => {
                     const { dog_ids, time_windows, ...rest } = maliciousHowl;

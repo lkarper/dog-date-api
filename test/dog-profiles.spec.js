@@ -8,7 +8,7 @@ describe('Dog profiles endpoints', () => {
     const { 
         testUsers, 
         testDogs, 
-        testPackMembers 
+        testPackMembers, 
     } = helpers.makeDogsFixtures();
 
     before('make knex instance', () => {
@@ -898,5 +898,5 @@ describe('Dog profiles endpoints', () => {
                 });
             });          
         });
-    })
+    });
 });

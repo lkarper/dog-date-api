@@ -9,7 +9,7 @@ describe(`Reviews endpoints`, () => {
         testUsers,
         testDogs,
         testReviews,
-        testComments
+        testComments,
     } = helpers.makeReviewsFixtures();
 
     before('make knex instance', () => {
@@ -166,10 +166,10 @@ describe(`Reviews endpoints`, () => {
                                         []
                                     );
                                     expect(res.body).to.eql(expectedReview);
-                                })
+                                });
                         });
                 });
-            })
+            });
         });
 
     });
@@ -790,8 +790,6 @@ describe(`Reviews endpoints`, () => {
                     context(`Given that the user attempts to patch a comment with a properly formatted body`, () => {
                         it(`responds with 204 and updates the comment`, () => {
                         
-                            
-                            
                             const expectedComment = {
                                 id: 1,
                                 review_id: 1,
