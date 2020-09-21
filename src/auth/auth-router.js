@@ -30,16 +30,19 @@ authRouter
                         if (!compareMatch) {
                             return res.status(400).json({ error: `Incorrect username or password` });
                         }
-                        const sub = dbUser.username;
+
+                        const subject = dbUser.username;
                         const payload = { user_id: dbUser.id};
+
                         const {
                             id,
                             username,
                             email,
-                            phone
+                            phone,
                         } = dbUser;
+
                         res.send({
-                            authToken: AuthService.createJWT(sub, payload),
+                            authToken: AuthService.createJWT(subject, payload),
                             id,
                             username,
                             email,
@@ -50,6 +53,7 @@ authRouter
             .catch(next);
     });
 
+// Endpoint used to send a new jwt to a user who is already logged in
 authRouter
     .post('/refresh', requireAuth, (req, res) => {
         const {
@@ -59,10 +63,11 @@ authRouter
             phone,
         } = req.user;
 
-        const sub = username;
+        const subject = username;
         const payload = { user_id: id };
+
         res.send({
-            authToken: AuthService.createJWT(sub, payload),
+            authToken: AuthService.createJWT(subject, payload),
             id,
             username,
             email,
