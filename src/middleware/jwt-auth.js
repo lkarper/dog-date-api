@@ -1,5 +1,6 @@
 const AuthService = require('../auth/auth-service');
 
+// Middleware that verifies that a request contains a valid authorization header
 function requireAuth(req, res, next) {
     const authToken = req.get('Authorization') || '';
 
