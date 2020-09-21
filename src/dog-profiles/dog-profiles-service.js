@@ -39,7 +39,7 @@ const DogProfilesService = {
                     ) AS "owner"`
                 ),
             )
-            .leftJoin('dog_date_users AS usr', 'dp.owner_id', 'usr.id')
+            .leftJoin('dog_date_users AS usr', 'dp.owner_id', 'usr.id');
     },
     getById(db, id) {
         return this.getAllProfiles(db)
@@ -102,12 +102,12 @@ const DogProfilesService = {
                         'aggressive', dp.aggressive,
                         'owner_description', dp.owner_description, 
                         'owner',
-                                json_build_object(
-                                    'id', usr.id,
-                                    'username', usr.username,
-                                    'email', usr.email,
-                                    'phone', usr.phone
-                                )
+                            json_build_object(
+                                'id', usr.id,
+                                'username', usr.username,
+                                'email', usr.email,
+                                'phone', usr.phone
+                            )
                     ) AS "profile"`
                 ),
             )
@@ -152,12 +152,12 @@ const DogProfilesService = {
                         'aggressive', dp.aggressive,
                         'owner_description', dp.owner_description, 
                         'owner',
-                                json_build_object(
-                                    'id', usr.id,
-                                    'username', usr.username,
-                                    'email', usr.email,
-                                    'phone', usr.phone
-                                )
+                            json_build_object(
+                                'id', usr.id,
+                                'username', usr.username,
+                                'email', usr.email,
+                                'phone', usr.phone
+                            )
                     ) AS "profile"`
                 ),
             )
@@ -204,7 +204,7 @@ const DogProfilesService = {
             little_time_with_other_dogs,
             much_experience_with_other_dogs,
             aggressive,
-            owner_description
+            owner_description,
         } = profile;
 
         return {
@@ -236,7 +236,7 @@ const DogProfilesService = {
                 email: xss(profile.owner.email),
                 username: xss(profile.owner.username),
                 phone: xss(profile.owner.phone),
-            }
+            },
         };
     },
 }

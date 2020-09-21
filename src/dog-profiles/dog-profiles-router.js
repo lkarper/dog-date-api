@@ -6,8 +6,9 @@ const { requireAuth } = require('../middleware/jwt-auth');
 const { CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET } = require('../config');
 
 const dogProfilesRouter = express.Router();
-const jsonBodyParser = express.json({limit: '10mb'});
+const jsonBodyParser = express.json({ limit: '10mb' });
 
+// Configure Cloudinary SDK to upload photos with Cloudinary api
 cloudinary.config({
     cloud_name: CLOUD_NAME,
     api_key: CLOUDINARY_API_KEY,
@@ -24,7 +25,8 @@ dogProfilesRouter
             user_id
         )
             .then(profiles => {
-                res.json(profiles
+                res.json(
+                    profiles
                         .map(profile => {
                             return {
                                 id: profile.id,
@@ -41,6 +43,10 @@ dogProfilesRouter
         const { pack_member_id } = req.body;
         const { pack_member } = res;
 
+        /* 
+            If a dog is already a pack member, simply return the pack member's info;
+            otherwise insert a new pack member into table
+        */
         if (pack_member) {
             return res
                 .status(200)
@@ -112,40 +118,6 @@ dogProfilesRouter
             .catch(next);
     });
 
-// dogProfilesRouter
-//     .route('/:dog_id/profile-photo')
-//     .all(checkDogProfileExists)
-//     .all(requireAuth)
-//     .post((req, res, next) => { //should be patch?
-//         if (res.profile.owner.id !== req.user.id) {
-//             return res.status(401).json({ error: `Unauthorized request` });
-//         }
-
-//         const { profile_img } = req.body;
-
-//         if (!profile_img) {
-//             return res.status(400).json({
-//                 error: {
-//                     message: `Request body must contain 'profile_img'.`,
-//                 },
-//             });
-//         }
-
-//         getProfilePhotoUrl(profile_img)
-//             .then(profile_img_url => {
-//                 const profileToUpdate = { profile_img_url };
-//                 return DogProfilesService.updateProfile(
-//                     req.app.get('db'),
-//                     req.params.dog_id,
-//                     profileToUpdate
-//                 );
-//             })
-//             .then(numRowsAffected => {
-//                 res.status(204).end();
-//             })
-//             .catch(next);
-//     })
-
 dogProfilesRouter
     .route('/:dog_id')
     .all(checkDogProfileExists)
@@ -154,6 +126,7 @@ dogProfilesRouter
         res.json(DogProfilesService.serializeProfile(res.profile))
     })
     .delete((req, res, next) => { 
+        // Verify that the user making the delete request owns the profile to be deleted
         if (res.profile.owner.id !== req.user.id) {
             return res.status(401).json({ error: `Unauthorized request` });
         }
@@ -168,6 +141,7 @@ dogProfilesRouter
             .catch(next);
     })
     .patch(jsonBodyParser, (req, res, next) => {
+        // Verify that the user making the patch request owns the profile to be updated
         if (res.profile.owner.id !== req.user.id) {
             return res.status(401).json({ error: `Unauthorized request` });
         }
@@ -195,7 +169,7 @@ dogProfilesRouter
             little_time_with_other_dogs,
             much_experience_with_other_dogs,
             aggressive,
-            owner_description
+            owner_description,
         } = req.body;
 
         const profileToUpdate = {
@@ -219,7 +193,7 @@ dogProfilesRouter
             little_time_with_other_dogs,
             much_experience_with_other_dogs,
             aggressive,
-            owner_description
+            owner_description,
         };
 
         const numberOfValues = Object.values(profileToUpdate).filter(Boolean).length;
@@ -235,6 +209,7 @@ dogProfilesRouter
             .then(profile_img_url => {
                 let newProfileUrl;
                 if (!profile_img_url && req.body.profile_img_url) {
+                    // If a user updates a profile, but does not add a new photo, use the old photo url
                     newProfileUrl = req.body.profile_img_url;
                 } else {
                     newProfileUrl = profile_img_url;
@@ -261,8 +236,7 @@ dogProfilesRouter
             })
             .catch(next);
     })
-    .post(requireAuth, jsonBodyParser, (req, res, next) => {    
-        
+    .post(requireAuth, jsonBodyParser, (req, res, next) => {      
         const {
             name, 
             profile_img,
@@ -285,7 +259,7 @@ dogProfilesRouter
             little_time_with_other_dogs,
             much_experience_with_other_dogs,
             aggressive,
-            owner_description
+            owner_description,
         } = req.body;
 
         const newProfile = {
@@ -309,7 +283,7 @@ dogProfilesRouter
             little_time_with_other_dogs,
             much_experience_with_other_dogs,
             aggressive,
-            owner_description
+            owner_description,
         };
 
         for (const [key, value] of Object.entries(newProfile)) {
@@ -336,43 +310,10 @@ dogProfilesRouter
                     .json(DogProfilesService.serializeProfile(profile));
             })
             .catch(next);
-
-        // if (profile_img) {
-        //     cloudinary.uploader.upload(profile_img, (error, result) => {
-        //         newProfile.profile_img_url = result.secure_url;
-
-        //         DogProfilesService.insertProfile(
-        //             req.app.get('db'),
-        //             newProfile
-        //         )
-        //             .then(profile => {
-        //                 res
-        //                     .status(201)
-        //                     .location(path.posix.join(req.originalUrl, `/${profile.id}`))
-        //                     .json(DogProfilesService.serializeProfile(profile));
-        //             })
-        //             .catch(next);
-        //     });
-        // } else {
-        //         newProfile.profile_img_url = '';
-
-        //         DogProfilesService.insertProfile(
-        //             req.app.get('db'),
-        //             newProfile
-        //         )
-        //             .then(profile => {
-        //                 res
-        //                     .status(201)
-        //                     .location(path.posix.join(req.originalUrl, `/${profile.id}`))
-        //                     .json(DogProfilesService.serializeProfile(profile));
-        //             })
-        //             .catch(next);
-        // }
     });
 
 async function checkDogProfileExists(req, res, next) {
     try {
-
         if (!req.params.dog_id && !req.body.pack_member_id) {
             return res.status(400).json({
                 error: {
@@ -380,6 +321,7 @@ async function checkDogProfileExists(req, res, next) {
                 },
             });
         }
+
         const profile = await DogProfilesService.getById(
             req.app.get('db'),
             req.params.dog_id || req.body.pack_member_id
@@ -387,7 +329,7 @@ async function checkDogProfileExists(req, res, next) {
 
         if (!profile) {
             return res.status(404).json({ 
-                error: { message: `Dog profile doesn't exist` }
+                error: { message: `Dog profile doesn't exist` },
             });
         }
 
@@ -398,6 +340,7 @@ async function checkDogProfileExists(req, res, next) {
     }
 }
 
+// Check to see if dog is already a pack member before attempting to add the pack member (by user_id and pack_member_id)
 async function checkDogIsPackMember(req, res, next) {
     try {
         const pack_member = await DogProfilesService.getPackMemberByUserIdAndPackMemberId(
@@ -413,6 +356,7 @@ async function checkDogIsPackMember(req, res, next) {
     }
 }
 
+// Check to see if an entry in dog_date_pack_members exists (uses id of row)
 async function checkPackMemberExists(req, res, next) {
     try {
         const pack_member = await DogProfilesService.getPackMemberById(
@@ -433,6 +377,7 @@ async function checkPackMemberExists(req, res, next) {
     }
 }
 
+// Verifies that a user attempting to modify an entry created the entry in dog_date_pack_members
 function checkAuthorization(req, res, next) {
     try {
         if (res.pack_member && res.pack_member.user_id !== req.user.id) {
@@ -440,13 +385,15 @@ function checkAuthorization(req, res, next) {
         }
         next();
     } catch(error) {
-        next(error)
+        next(error);
     }
 }
 
+// Uploads an image to Cloudinary and returns the image url for insertion into dog_date_dog_profiles
 function getProfilePhotoUrl(profile_img) {
     return new Promise((resolve, reject) => {
         if (!profile_img) {
+            // If an image is not provided, simply return an empty string for insertion into table
             resolve('');
         } else { 
             cloudinary.uploader.upload(profile_img, (error, result) => {
