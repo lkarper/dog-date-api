@@ -169,7 +169,7 @@ describe('Users Endpoints', () => {
                         db
                             .from('dog_date_users')
                             .select('*')
-                            .where({id: res.body.id })
+                            .where({ id: res.body.id })
                             .first()
                             .then(row => {
                                 expect(row.username).to.eql(newUser.username);
