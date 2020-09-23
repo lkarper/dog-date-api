@@ -2,14 +2,14 @@
 
 This API was designed for use with the application [Dog Date](https://dog-date-app.herokuapp.com/) ([GitHub](https://github.com/lkarper/dog-date-app)).  It functions independently of the app, however, and resides at the base url `https://dog-date-api.herokuapp.com/api`, which is used for all API requests.
 
-## Authorization (/auth)
+## Authorization `/auth`
 Requests to endpoints that require authorization must include an `Authorization` header with a bearer token (e.g. `"Authorization": "bearer [token]"`).  Bearer tokens are obtained by appending a valid username and password to the body of a POST request sent to the `/auth/login` endpoint.  Tokens expire after fifteen minutes.  Tokens may be refreshed before expiry by making a POST request to `/auth/refresh` with an `Authorization` header that contains a valid bearer token. 
 
 ## Endpoints
 
-### Users (/users)
+### Users `/users`
 
-#### /users/ (POST)
+#### `/` (`POST`)
 Make a POST request to this endpoint to create a new user. You must supply the following fields in the body of the request:
 * `password` (string) - Passwords must: be between 8 and 72 characters in length, not begin or end with a space, contain at least one lowercase letter, contain at least one uppercase letter, contain at least one number, contain at least one special character (e.g. !, @, #, $, etc.).
 * `username` (string) - Usernames must be between 3 and 72 characters in length.
@@ -20,19 +20,19 @@ Usernames and emails must be unique.  If a username or email is already linked t
 The request body may contain the following optional fields:
 * `phone` (string)
 
-#### /users/ (PATCH) (authorization required)
+#### `/` (`PATCH`) (authorization required)
 This endoint is used to update a user's email or phone number.  Request bodies must contain one of:
 * `email` (string)
 * `phone` (string)
 
 Emails must be unique.  If an email is already linked to a user-account, the server will respond with 400.
 
-### Dog Profiles (/dog-profiles)
+### Dog Profiles `/dog-profiles`
 
-#### / (GET)
+#### `/` (`GET`)
 A GET request to this endpoint will return all dog profiles.
 
-#### / (POST) (authorization required)
+#### `/` (`POST`) (authorization required)
 A POST request to this endpoint will create a new dog profile linked to the user whose information is contained within the bearer token appended to the `Authorization` header of the request.  The request body must contain the following fields:
 * `name` (string) - A dog's name
 * `age_years` (number) - A dog's age in years
@@ -59,13 +59,13 @@ A POST request to this endpoint will create a new dog profile linked to the user
 The following fields are optional:
 * `profile_img` (base-64 data URI) - An image to be used in the dog's profile
 
-#### /:dog_id (GET) (authorization required)
+#### `/:dog_id` (`GET`) (authorization required)
 A GET request sent to this endpoint will return the dog profile information for the profile with the id equal to the `dog_id` parameter.
 
-#### /:dog_id (DELETE) (authorization required)
+#### `/:dog_id` (`DELETE`) (authorization required)
 A DELETE request sent to this endpoint will delete the dog profile with the id equal to the `dog_id` parameter.
 
-#### /:dog_id (PATCH) (authorization required)
+#### `/:dog_id` (`PATCH`) (authorization required)
 A PATCH request sent to this endpoint will update the dog profile with the id equal to the `dog_id` parameter.  The request body must contain at least one of the following fields:
 * `name` (string) - A dog's name
 * `profile_img` (base-64 data URI) - An image to be used in the dog's profile
@@ -90,25 +90,25 @@ A PATCH request sent to this endpoint will update the dog profile with the id eq
 * `aggressive` (boolean) - A boolean value describing whether a dog is aggressive
 * `owner_description` (string) - A description of a dog
 
-#### /pack-members (GET) (authorization required)
+#### `/pack-members` (`GET`) (authorization required)
 This endpoint returns the pack members for the user whose information is contained in the bearer token appended to the `Authorization` header.
 
-#### /pack-members (POST) (authorization required)
+#### `/pack-members` (`POST`) (authorization required)
 This endpoint creates a new pack member.  You must supply the following fields in the body of the request:
 * `pack_member_id` (number) - this is the ID for the dog profile that a user wishes to add to his/her pack.
 
-#### /pack-members/:entry_id (GET) (authorization required)
+#### `/pack-members/:entry_id` (`GET`) (authorization required)
 A GET request sent to this endpoint will return the pack member information with the id equal to the `entry_id` parameter.
 
-#### /pack-member/:entry_id (DELETE) (authorization required)
+#### `/pack-member/:entry_id` (`DELETE`) (authorization required)
 A DELETE request sent to this endpoint will delete the pack member with the entry id equal to the `entry_id` parameter.
 
-#### /user-dogs (GET) (authorization required)
+#### `/user-dogs` (`GET`) (authorization required)
 A GET request sent to this endpoint will return the dog profile information for all dogs linked to the user whose info is contained within the bearer token appended to the request's `Authorization` header.
 
-### Howls (/howls)
+### Howls `/howls`
 
-#### / (GET) 
+#### `/` (`GET`) 
 A GET request sent to this endpoint without query parameters will return information for all howls.  Howls may be filtered using the following query parameters: 
 * `state` - A US postal code state abbreviation (e.g. NY, AL, PA).  Only one state may be queried per request.
 * `zipcode` - A five digit US ZIP code.
@@ -119,7 +119,7 @@ A GET request sent to this endpoint without query parameters will return informa
 * `date` - A calendar date on which a howl must fall.  Dates must match the following format: `[four-digit year]-[two-digit month]-[two-digit day]`. Only one date may be used per request. E.g. `2020-09-04`. 
 * `time_windows` - Used to add time windows for a calendar date that has been included. If no time windows are included, all meetings that fall on that day will be returned.  Time should be in 24-hour format.  Separate each time window with a `|`.  Time windows take the following form: `[start time],[end time]`.  E.g. `12:00,15:00|17:00,18:00|20:00,22:00`.
 
-#### / (POST) (authorization required)
+#### `/` (`POST`) (authorization required)
 This endpoint is used to create a new howl linked to the user whose information is contained within the bearer token appended to the `Authorization` header of the request.  The request body must contain the following fields:
 * `howl_title` (string) - A title for the howl.
 * `address` (string) - The address or location at which the howl will take place.
@@ -152,10 +152,10 @@ A request body may contain the following optional fields:
 * `lat` (string) - The geographic latitude for the howl's location.
 * `lon` (string) - The geographic longitude for the howl's location.
 
-#### /:howl_id (GET) (authorization required)
+#### `/:howl_id` (`GET`) (authorization required)
 A GET request sent to this endpoint returns information for the howl with the id equal to the parameter `howl_id`.
 
-#### /:howl_id (PATCH) (authorization required)
+#### `/:howl_id` (`PATCH`) (authorization required)
 A PATCH request sent to this endpoint updates the details of a howl with the id equal to the parameter `howl_id`.  The request body must contain at least one of the following fields:
 * `howl_title` (string) - A title for the howl.
 * `address` (string) - The address or location at which the howl will take place.
@@ -186,34 +186,34 @@ E.g.
         },
     ]`
 
-#### /:howl_id (DELETE) (authorization required)
+#### `/:howl_id` (`DELETE`) (authorization required)
 A DELETE request sent to this endpoint deletes the howl with the id equal to the parameter `howl_id`
 
-#### /by-dog/:dog_id (GET) (authorization required)
+#### `/by-dog/:dog_id` (`GET`) (authorization required)
 A GET request sent to this endpoint returns all howls which include a dog with the id equal to the parameter `dog_id`.
 
-#### /user-saved (GET) (authorization required)
+#### `/user-saved` (`GET`) (authorization required)
 A GET request sent to this endpoint returns the saved howls for the user whose information is contained in the bearer token appended to the `Authorization` header.
 
-#### /user-saved (POST) (authorization required)
+#### `/user-saved` (`POST`) (authorization required)
 This endpoint is used to add a howl to a user's saved howls. You must supply the following fields in the request body:
 * `howl_id` (number) - The id for the howl that is to be saved
 
-#### /user-saved/:entry_id (GET) ) (authorization required)
+#### `/user-saved/:entry_id` (`GET`) ) (authorization required)
 A GET request sent to this endpoint will return the howl information for the howl in a user's saved howls with the id equal to the parameter `entry_id`.
 
-#### /user-saved/:entry_id (DELETE) (authorization required)
+#### `/user-saved/:entry_id` (`DELETE`) (authorization required)
 A DELETE request sent to this endpoint removes the howl with the id equal to the parameter `entry_id` from the list of a user's saved howls. 
 
-#### /by-user (GET) (authorization required)
+#### `/by-user` (`GET`) (authorization required)
 A GET request sent to this endpoint returns the howl created by the user whose information is contained in the bearer token appended to the `Authorization` header.
 
-### Reviews (/reviews)
+### Reviews `/reviews`
 
-#### / (GET)
+#### `/` (`GET`)
 A GET request sent to this endpoint returns all dog reviews.
 
-#### / (POST) (authorization required)
+#### `/` (`POST`) (authorization required)
 A POST request sent to this endpoint is used to create a new dog review.  The request body must contain the following fields:
 * `date_created` (string) - The date and time at which the review was created (in JSON string format; e.g. '2020-07-31T19:35:31.457Z').
 * `dog_id` (number) - The id of the dog being reviewed.
@@ -237,13 +237,13 @@ A request body may contain the following optional fields:
 * `lon` (string) - The geographic longitude for the location where the user's dog played with the dog being reviewed.
 * `personal_message` (string) - A personal message to be included with the review.
 
-#### /:review_id (GET) (authorization required)
+#### `/:review_id` (`GET`) (authorization required)
 A GET request sent to this endpoint will return the review with the id equal to the parameter `review_id`.
 
-#### /:review_id (DELETE) (authorization required)
+#### `/:review_id` (`DELETE`) (authorization required)
 A DELETE request sent to this endpoint will DELETE the review with the id equal to the parameter `review_id`.
 
-#### /:review_id (PATCH) (authorization required)
+#### `/:review_id` (`PATCH`) (authorization required)
 This endpoint is used to update reviews.  The request body must contain one of:
 * `date_created` (string) - The date on which the date was created (in JSON string format; e.g. `2020-07-31T19:35:31.457Z`).
 * `dog_id` (number) - The id of the dog being reviewed.
@@ -265,28 +265,28 @@ This endpoint is used to update reviews.  The request body must contain one of:
 * `lon` (string) - The geographic longitude for the location where the user's dog played with the dog being reviewed.
 * `personal_message` (string) - A personal message to be included with the review.
 
-#### /by-owner (GET) (authorization required)
+#### `/by-owner` (`GET`) (authorization required)
 A GET request sent to this endpoint will return all reviews of dog's owned by the user whose information is contained in the bearer token appended to the `Authorization` header.
 
-#### /by-dog/:dog_id (GET) (authorization required)
+#### `/by-dog/:dog_id` (`GET`) (authorization required)
 A GET request sent to this endpoint will return all reviews of a dog whose id is equal to the parameter `dog_id`.
 
-#### /:review_id/comments (GET) (authorization required)
+#### `/:review_id/comments` (`GET`) (authorization required)
 A GET request sent to this endpoint will return all comments on a review with the id equal to the parameter `review_id`.
 
-#### /:review_id/comments (POST) (authorization required)
+#### `/:review_id/comments` (`POST`) (authorization required)
 This endpoint is used to add a new comment to a review.  The request body must contain the following fields:
 * `date_time` (string) -The date and time at which the comment was created (in JSON string format; e.g. '2020-07-31T19:35:31.457Z').
 * `comment` (string) - The comment text.
 * `edited` (boolean) - A boolean value indicating whether the comment has been edited.
 
-#### /:review_id/comment/:comment_id (GET) (authorization required)
+#### `/:review_id/comment/:comment_id` (`GET`) (authorization required)
 A GET request sent to this endpoint will return the comment with the id equal to the parameter `comment_id`.
 
-#### /:review_id/comment/:comment_id (DELETE) (authorization required)
+#### `/:review_id/comment/:comment_id` (`DELETE`) (authorization required)
 A DELETE request sent to this endpoint will delete the comment with the id equal to the parameter `comment_id`.
 
-#### /:review_id/comment/:comment_id (PATCH) ) (authorization required)
+#### `/:review_id/comment/:comment_id` (`PATCH`) ) (authorization required)
 A PATCH request send to this endpoint will update a comment.  The request body must contain at least one of the following fields: 
 * `date_time` (string) -The date and time at which the comment was created (in JSON string format; e.g. '2020-07-31T19:35:31.457Z').
 * `comment` (string) - The comment text.
