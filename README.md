@@ -291,3 +291,9 @@ A PATCH request send to this endpoint will update a comment.  The request body m
 * `date_time` (string) -The date and time at which the comment was created (in JSON string format; e.g. '2020-07-31T19:35:31.457Z').
 * `comment` (string) - The comment text.
 * `edited` (boolean) - A boolean value indicating whether the comment has been edited.
+
+## Created With
+* Node.js
+* Express.js
+* PostgreSQL
+* Knex.js
