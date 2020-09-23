@@ -149,7 +149,6 @@ dogProfilesRouter
         const {
             name, 
             profile_img,
-            profile_img_url,
             age_years,
             age_months,
             sex, 

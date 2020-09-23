@@ -57,7 +57,7 @@ howlsRouter
             personal_message,
             dog_ids,
             time_windows,
-        }
+        };
 
         for (const [key, value] of Object.entries(newHowl)) {
             if (value == null) {
