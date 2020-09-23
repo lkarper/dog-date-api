@@ -1,9 +1,9 @@
 # Dog Date API
 
-This API was designed for use with the application [Dog Date](https://dog-date-app.herokuapp.com/) ([GitHub](https://github.com/lkarper/dog-date-app)).  It functions independently of the app, however, and resides at the base url "https://dog-date-api.herokuapp.com/api".
+This API was designed for use with the application [Dog Date](https://dog-date-app.herokuapp.com/) ([GitHub](https://github.com/lkarper/dog-date-app)).  It functions independently of the app, however, and resides at the base url "https://dog-date-api.herokuapp.com/api", which is used for all API requests.
 
 ## Authorization (/auth)
-Requests to endpoints that require authorization must include an 'Authorization' header with a bearer token (e.g. "Authorization: bearer \[token\]).  Bearer tokens are obtained by appending a valid username and password to the body of a POST request sent to the "/auth/login" endpoint.  Tokens expire after fifteen minutes.  Tokens may be refreshed before expiry by making a POST request to "/auth/refresh" with an 'Authorization' header that contains a valid bearer token. 
+Requests to endpoints that require authorization must include an 'Authorization' header with a bearer token (e.g. `Authorization: bearer \[token\]`).  Bearer tokens are obtained by appending a valid username and password to the body of a POST request sent to the `/auth/login` endpoint.  Tokens expire after fifteen minutes.  Tokens may be refreshed before expiry by making a POST request to `/auth/refresh` with an 'Authorization' header that contains a valid bearer token. 
 
 ## Endpoints
 
@@ -11,14 +11,14 @@ Requests to endpoints that require authorization must include an 'Authorization'
 
 #### /users/ (POST)
 Make a POST request to this endpoint to create a new user. You must supply the following fields in the body of the request:
-* "password" (string) - Passwords must: be between 8 and 72 characters in length, not begin or end with a space, contain at least one lowercase letter, contain at least one uppercase letter, contain at least one number, contain at least one special character (e.g. !, @, #, $, etc.).
-* "username" (string) - Usernames must be between 3 and 72 characters in length.
-* "email" (string)
+* password (string) - Passwords must: be between 8 and 72 characters in length, not begin or end with a space, contain at least one lowercase letter, contain at least one uppercase letter, contain at least one number, contain at least one special character (e.g. !, @, #, $, etc.).
+* username (string) - Usernames must be between 3 and 72 characters in length.
+* email (string)
 
 Usernames and emails must be unique.  If a username or email is already linked to a user-account, the server will respond with 400.
 
-Optional fields:
-* "phone" (string)
+The request body may contain the following optional fields:
+* phone (string)
 
 #### /users/ (PATCH) (authorization required)
 This endoint is used to update a user's email or phone number.  Request bodies must contain one of:
@@ -113,9 +113,9 @@ A GET request sent to this endpoint without query parameters will return informa
 * state - A US postal code state abbreviation (e.g. NY, AL, PA).  Only one state may be queried per request.
 * zipcode - A five digit US ZIP code.
 * rating_filter - A minimum average rating that a dog in a howl must meet for the dog to be included in the howl (1 - 5).
-* type_of_meeting - The type of howl desired.  For one time meetings, use "once"; for recurring meetings, use "recurring".
+* type_of_meeting - The type of howl desired.  For one time meetings, use 'once"; for recurring meetings, use "recurring".
 * days_of_the_weeks - The days of the week on which a howl may fall; first letter capitalized.  Separate each day with a "|" (no spaces, e.g. "Monday|Friday|Saturday").
-* recurring_meeting_windows - Used to add time windows for days of the week that have been included. A day may be added to days_of_the_week without time windows (in which case all meetings that fall on that day will be returned).  Time should be in 24-hour format.  Separate each time window with a "|".  Time windows take the following form: "\[Day-index\], \[Day-\], \[start time\], \[end time\]". E.g. "Monday-0,Monday,10:00,14:00|Tuesday-0,Tuesday,14:00,18:00".
+* recurring_meeting_windows - Used to add time windows for days of the week that have been included. A day may be added to days_of_the_week without time windows (in which case all meetings that fall on that day will be returned).  Time should be in 24-hour format.  Separate each time window with a "|".  Time windows take the following form: "\[Day-index\], \[Day\], \[start time\], \[end time\]". E.g. "Monday-0,Monday,10:00,14:00|Tuesday-0,Tuesday,14:00,18:00".
 * date - A calendar date on which a howl must fall.  Dates must match the following format: "\[four-digit year\]-\[two-digit month\]-\[two-digit day\]". Only one date may be used per request. E.g. "2020-09-04". 
 * time_windows - Used to add time windows for a calendar date that has been included. If no time windows are included, all meetings that fall on that day will be returned.  Time should be in 24-hour format.  Separate each time window with a "|".  Time windows take the following form: "\[start time\],\[end time\]".  E.g. "12:00,15:00|17:00,18:00|20:00,22:00".
 
@@ -135,7 +135,7 @@ This endpoint is used to create a new howl linked to the user whose information 
 * start_time(string) - The time at which the window begins (24-hour format).
 * end_time(string) - The time at which the window ends (24-hour format).
 E.g.
-    [
+    `[
         {
             "day_of_week": "Monday",
             "start_time": "10:00",
@@ -146,7 +146,7 @@ E.g.
             "start_time": "14:00",
             "end_time": "16:00",
         },
-    ]
+    ]`
 
 A request body may contain the following optional fields:
 * lat (string) - The geographic latitude for the howl's location.
@@ -173,7 +173,7 @@ A PATCH request sent to this endpoint updates the details of a howl with the id 
 * start_time(string) - The time at which the window begins (24-hour format).
 * end_time(string) - The time at which the window ends (24-hour format).
 E.g.
-    [
+    `[
         {
             "day_of_week": "Monday",
             "start_time": "10:00",
@@ -184,7 +184,7 @@ E.g.
             "start_time": "14:00",
             "end_time": "16:00",
         },
-    ]
+    ]`
 
 #### /:howl_id (DELETE) (authorization required)
 A DELETE request sent to this endpoint deletes the howl with the id equal to the parameter "howl_id"
