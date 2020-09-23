@@ -20,7 +20,6 @@ reviewsRouter
           date_created,
           dog_id,
           review_title,
-          reviewer,
           friendliness_dogs,
           friendliness_people,
           playing_interest,
@@ -43,7 +42,6 @@ reviewsRouter
             date_created,
             dog_id,
             review_title,
-            reviewer,
             friendliness_dogs,
             friendliness_people,
             playing_interest,
@@ -67,6 +65,7 @@ reviewsRouter
             }
         }
 
+        newReview.reviewer = req.user.username;
         newReview.lat = lat;
         newReview.lon = lon;
         newReview.personal_message = personal_message;

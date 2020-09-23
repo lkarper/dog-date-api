@@ -98,7 +98,6 @@ describe(`Reviews endpoints`, () => {
         const requiredFields = [
             'date_created',
             'dog_id',
-            'reviewer',
             'friendliness_dogs',
             'friendliness_people',
             'playing_interest',
