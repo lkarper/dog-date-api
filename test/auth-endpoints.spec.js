@@ -123,6 +123,6 @@ describe(`Auth Endpoints`, () => {
                     email: testUser.email,
                     phone: testUser.phone
                 });
-        });;
+        });
     });
 });
